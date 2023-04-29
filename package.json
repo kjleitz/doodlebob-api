@@ -8,7 +8,9 @@
     "lint": "eslint",
     "start": "ts-node src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "typeorm": "typeorm-ts-node-commonjs"
+    "typeorm": "typeorm-ts-node-commonjs",
+    "shell": "docker compose run --rm server sh",
+    "db:create": "CREATE_DB=true docker compose up"
   },
   "keywords": [
     "doodlebob",

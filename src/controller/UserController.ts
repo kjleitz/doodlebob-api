@@ -1,4 +1,4 @@
-import { AppDataSource } from "../data-source";
+import { appDataSource } from "../appDataSource";
 import { NextFunction, Request, Response } from "express";
 import { User } from "../entity/User";
 import { BaseController } from "./BaseController";
@@ -7,7 +7,7 @@ import { BaseController } from "./BaseController";
 // TODO: serializers (explicit or handler?)
 // TODO: http error handler
 export class UserController extends BaseController {
-  private userRepository = AppDataSource.getRepository(User);
+  private userRepository = appDataSource.getRepository(User);
 
   index(request: Request, response: Response, next: NextFunction) {
     return this.userRepository.find();

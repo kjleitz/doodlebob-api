@@ -13,6 +13,9 @@ services:
     links:
       - database
     command: ["npm", "start"]
+    environment:
+      - CREATE_DB=${CREATE_DB}
+      - CREATE_DATABASE=${CREATE_DB}
 
   database:
     image: postgres:15.2-alpine
