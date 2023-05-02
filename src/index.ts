@@ -18,7 +18,6 @@ app.use(cors());
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(errorHandler);
 
 // Routes
 app.get("/ping", (req, res) => res.send("pong"));
@@ -26,15 +25,23 @@ app.get("/ping", (req, res) => res.send("pong"));
 routes.forEach(({ method, route, controller, action }) => {
   app[method](route, (req, res, next) => {
     const controllerInstance = new controller();
-    const result = controllerInstance[action](req, res, next);
+    let result;
+    try {
+      result = controllerInstance[action](req, res, next);
+    } catch (e) {
+      return next(e);
+    }
 
-    Promise.resolve(result).then((value) => {
-      if (value === null || typeof value === "undefined") return;
-
-      res.json(value);
-    });
+    return Promise.resolve(result)
+      .then((value) => {
+        if (value === null || typeof value === "undefined") return;
+        res.json(value);
+      })
+      .catch((e) => next(e));
   });
 });
+
+app.use(errorHandler);
 
 // Database
 appDataSource

@@ -7,7 +7,7 @@ import { mapToHttpError } from "../../lib/errors/http/mapToHttpError";
 const responseForError = (httpError: HttpError, original?: Error): Record<string, any> => {
   const errorObject: Record<string, any> = {
     status: `${httpError.statusCode}`,
-    title: httpError.name,
+    title: httpError.title,
     detail: httpError.message,
   };
 
