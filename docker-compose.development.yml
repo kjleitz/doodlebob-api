@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  database:
+    container_name: 'database'
+    image: 'postgres:14.2-alpine'
+    restart: always
+    env_file:
+      - .env.development
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./database/data:/var/lib/postgresql/data/
+
+  api:
+    entrypoint: /bin/sh './bin/doodlebob-node-dev'
+    env_file:
+      - .env.development
+    ports:
+      - '4000:4000'
+    depends_on:
+      - database
+    links:
+      - database
+
+  # # To run tests: uncomment and `docker exec -ti api_test sh` then `pnpm run test`
+  # # Commented out because it slows stopping too much (times out). Not sure exactly
+  # # why. In entrypoints you fix this with `exec` to replace the running process.
+  # api_test:
+  #   container_name: 'api_test'
+  #   command: sh -c "echo 'Test container ready' && tail -f /dev/null"
+  #   build: .
+  #   stdin_open: true
+  #   tty: true
+  #   depends_on:
+  #     - database
+  #   links:
+  #     - database
+  #   env_file:
+  #     - .env.development
+  #   volumes:
+  #     - .:/app/
+  #     - /app/node_modules

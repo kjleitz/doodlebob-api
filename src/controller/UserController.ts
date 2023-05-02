@@ -1,11 +1,12 @@
-import { appDataSource } from "../appDataSource";
+import { appDataSource } from "../orm/config/appDataSource";
 import { NextFunction, Request, Response } from "express";
-import { User } from "../entity/User";
+import { User } from "../orm/entities/User";
 import { BaseController } from "./BaseController";
+import { CreateUserData, UpdateUserData, buildUser, editUser } from "../lib/users/userData";
+import { comparePassword } from "../lib/users/auth";
 // import { NotFoundError } from "../errors/NotFoundError";
 
 // TODO: serializers (explicit or handler?)
-// TODO: http error handler
 export class UserController extends BaseController {
   private userRepository = appDataSource.getRepository(User);
 
@@ -16,28 +17,28 @@ export class UserController extends BaseController {
   show(request: Request, response: Response, next: NextFunction) {
     const { id } = request.params;
 
-    // return this.userRepository.findOneBy({ id }).then((user) => {
-    //   if (!user) throw new NotFoundError("User", id);
-
-    //   return user;
-    // });
-
-    return this.userRepository.findOneByOrFail({ id }).then(user => ({ ...user, foo: "bar" }));
+    return this.userRepository.findOneByOrFail({ id });
   }
 
   create(request: Request, response: Response, next: NextFunction) {
-    const { username } = request.body;
-    const user = new User(null, username);
+    // TODO: JSON:API spec
+    const { username, email, password } = request.body as CreateUserData;
 
-    return this.userRepository.save(user);
+    return buildUser({ username, email, password }).then((user) => {
+      this.userRepository.save(user);
+    });
   }
 
   update(request: Request, response: Response, next: NextFunction) {
     const { id } = request.params;
-    const { username } = request.body;
+    const { username, email, newPassword, oldPassword } = request.body as UpdateUserData;
 
-    return this.userRepository.findOneByOrFail({ id }).then((_user) => {
-      return this.userRepository.update(id, { username });
+    return this.userRepository.findOneByOrFail({ id }).then((user) => {
+      if (!newPassword) return this.userRepository.update(id, { username, email });
+
+      return comparePassword(user, oldPassword)
+        .then(() => editUser({ username, email, newPassword, oldPassword }))
+        .then((updatedAttrs) => this.userRepository.update(id, updatedAttrs));
     });
   }
 

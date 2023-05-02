@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# From https://github.com/mkosir/typeorm-express-typescript
+
+echo "Install bash and execute 'wait-for-it.sh' script"
+apk add --update bash
+./bin/wait-for-it $PG_HOST:5432 --timeout=30 --strict -- echo "postgres up and running"
+
+pnpm run migration:run
+pnpm run seed:run
+exec pnpm run dev

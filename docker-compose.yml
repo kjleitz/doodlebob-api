@@ -1,32 +1,10 @@
-version: "3"
+version: '3'
 
 services:
-
-  server:
+  api:
+    container_name: 'api'
     build: .
-    volumes:
-      - ./:/app
-    ports:
-      - 8080:3000
-    env_file:
-      - .env
-    links:
-      - database
-    command: ["npm", "start"]
-    environment:
-      - CREATE_DB=${CREATE_DB}
-      - CREATE_DATABASE=${CREATE_DB}
-
-  database:
-    image: postgres:15.2-alpine
     restart: always
-    ports:
-      - 5432:5432
     volumes:
-      - database-data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-
-volumes:
-  database-data: {}
+      - .:/app/
+      - /app/node_modules

@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { MissingActionError } from "../errors/MissingActionError";
+import { MissingActionError } from "../lib/errors/app/MissingActionError";
 
 export interface ControllerAction<R = unknown> {
   (request: Request, response: Response, next: NextFunction): Promise<R>;
