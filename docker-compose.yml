@@ -1,10 +1,14 @@
-version: '3'
+version: "3"
 
 services:
   api:
-    container_name: 'api'
+    container_name: api
+    image: doodlebob.api.base:${VERSION}
     build: .
     restart: always
     volumes:
       - .:/app/
-      - /app/node_modules
+      - node-modules:/app/node_modules
+
+volumes:
+  node-modules:

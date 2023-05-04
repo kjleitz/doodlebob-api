@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
+import Role from "../../lib/users/Role";
 
 @Entity()
 // @Index(["name"], {unique: true}, "WHERE (key is NOT IN(conditional_col_b));")
@@ -13,6 +14,9 @@ export default class User {
   @Index({ unique: true, where: "email != ''" })
   @Column({ default: "" })
   email!: string;
+
+  @Column({ type: "int", default: Role.PEASANT })
+  role!: Role;
 
   @Column({ default: "" })
   passwordHash!: string;

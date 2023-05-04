@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import Config from "../../Config";
+import User from "../entities/User";
 
 const seedDataSource = new DataSource({
   type: "postgres",
@@ -11,8 +12,10 @@ const seedDataSource = new DataSource({
   database: Config.dbName,
   synchronize: Config.ormSync,
   logging: Config.ormLogging,
-  entities: ["src/orm/entities/**/*.ts"],
-  migrations: ["src/orm/seeds/**/*.ts"],
+  entities: [User],
+  // I don't know if any of these glob patterns actually work. They certainly
+  // don't work for the `entities` key.
+  migrations: ["src/orm/seeds/**/*{.js,.ts}", "build/orm/seeds/**/*{.js,.ts}"],
 });
 
 export default seedDataSource;

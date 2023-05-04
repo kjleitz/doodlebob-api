@@ -17,14 +17,20 @@ pnpm i
 ### Add environment variables
 
 ```
-cp .env.example .env.development
+cp .env.environment.example .env.development
 ```
 
 - Set a new `JWT_SECRET` using a secure RNG
 - `PG_HOST` should be `database` if you're running with Docker Compose in development (which is what you should do)
 - `TYPEORM_SYNCHRONIZE` should be false in production/staging environments
 
-For production and staging environments, create `.env.production` and `.env.staging` files, which are loaded by `docker-compose.production.yml` respectively
+For production and staging environments, create `.env.production` and `.env.staging` files, which are loaded by `docker-compose.production.yml` respectively.
+
+```
+cp .env.example .env
+```
+
+In production/staging, you should also update the `VERSION` variable (used in image tags) for every build; in development this variable is set in `.env`, and it can remain unchanged because... it doesn't really matter.
 
 ### Create database
 
@@ -58,7 +64,23 @@ pnpm run docker:dev
 
 If for whatever reason you need to tear down the containers/networks/etc., you can run `pnpm run docker:dev:down` which is basically just a `docker compose down` wrapped in a similar fashion to the above.
 
-### Run stuff (migrations, seeds, scripts) in the docker context
+### Generate migrations
+
+If you make changes to the entities or schema or whatever and you want to generate a migration file automatically, then (while the application is up and running), run:
+
+```
+pnpm run docker:migration:generate ShortNameForChangesYouMade
+```
+
+...and a new migration file will pop up in `src/orm/migrations/` named something like `1683226149242-ShortNameForChangesYouMade.ts` with the necessary queries.
+
+You'll want to run that migration pretty much immediately afterward:
+
+```
+pnpm run docker:migration:run
+```
+
+### Run stuff in the Docker context
 
 While the application is up and running, run:
 
@@ -87,5 +109,8 @@ _(in another shell)_
 
 ```
 me@lappy $ pnpm run shell
+/app # echo hi > /dev/null
+/app # pnpm run seed:revert
+...
 /app # pnpm run seed:run
 ```

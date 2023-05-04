@@ -1,11 +1,13 @@
 import User from "../../orm/entities/User";
 import { omit } from "../utils/objects";
+import Role from "./Role";
 import { hashPassword, setPassword } from "./auth";
 
 export interface UserData {
   readonly id: string;
   username: string;
   email: string;
+  role: Role;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -13,12 +15,14 @@ export interface UserData {
 export interface CreateUserData {
   username: string;
   email?: string;
+  role?: Role;
   password: string;
 }
 
 export interface BaseUpdateUserData {
   username?: string;
   email?: string;
+  role?: Role;
   newPassword?: undefined;
   oldPassword?: undefined;
 }
@@ -26,6 +30,7 @@ export interface BaseUpdateUserData {
 export interface ChangePasswordUserData {
   username?: string;
   email?: string;
+  role?: Role;
   newPassword: string;
   oldPassword: string;
 }
@@ -37,6 +42,7 @@ export function userDataFromEntity(userEntity: User): UserData {
     id: userEntity.id,
     username: userEntity.username,
     email: userEntity.email,
+    role: userEntity.role,
     createdAt: userEntity.createdAt,
     updatedAt: userEntity.updatedAt,
   };
@@ -48,15 +54,13 @@ export function buildUserSync(userData: Omit<CreateUserData, "password"> & { pas
   const user = new User();
   user.username = userData.username;
   if (userData.email) user.email = userData.email;
+  user.role = userData.role ?? Role.PEASANT;
 
   return user;
 }
 
 export function buildUser(userData: CreateUserData): Promise<User> {
-  const user = new User();
-  user.username = userData.username;
-  if (userData.email) user.email = userData.email;
-
+  const user = buildUserSync(omit(userData, "password"));
   return setPassword(user, userData.password);
 }
 
@@ -66,12 +70,13 @@ export function editUserSync(userData: BaseUpdateUserData): Partial<User> {
   const user = new User();
   if (userData.username) user.username = userData.username;
   if (userData.email) user.email = userData.email;
+  if (typeof userData.role === "number") user.role = userData.role;
 
   return user;
 }
 
 // Validations and authentication should be done before using this method if the
-// password is to be changed.
+// password or role are to be changed.
 export function editUser(userData: UpdateUserData): Promise<Partial<User>> {
   const user = editUserSync(omit(userData, "newPassword", "oldPassword"));
   if (!userData.newPassword) return Promise.resolve(user);

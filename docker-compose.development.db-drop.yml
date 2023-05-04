@@ -1,21 +1,22 @@
-version: '3'
+version: "3"
 
 services:
   database:
-    container_name: 'database'
-    image: 'postgres:14.2-alpine'
+    container_name: database
+    image: postgres:14.2-alpine
     restart: "no"
     env_file:
       - .env.development
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - ./database/data:/var/lib/postgresql/data/
 
   db_drop:
-    container_name: 'db_drop'
+    container_name: db_drop
+    image: doodlebob.db-drop:latest
     build: .
-    entrypoint: /bin/sh './bin/doodlebob-db-drop'
+    entrypoint: /bin/sh "./bin/doodlebob-db-drop"
     restart: "no"
     env_file:
       - .env.development
@@ -25,4 +26,7 @@ services:
       - database
     volumes:
       - .:/app/
-      - /app/node_modules
+      - node-modules:/app/node_modules
+
+volumes:
+  node-modules:

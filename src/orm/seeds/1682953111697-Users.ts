@@ -1,11 +1,13 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 import User from "../entities/User";
 import { CreateUserData, buildUser } from "../../lib/users/userData";
+import Role from "../../lib/users/Role";
 
 const USER_SEEDS: CreateUserData[] = [
   {
     username: "admin",
     email: "admin@admin.com",
+    role: Role.ADMIN,
     password: "p4ssw0rd",
   },
   {
@@ -31,6 +33,7 @@ const USER_SEEDS: CreateUserData[] = [
   {
     username: "saul.goodman",
     email: "saul.goodman@test.com",
+    role: Role.ADMIN,
     password: "p4ssw0rd",
   },
   {
@@ -41,6 +44,7 @@ const USER_SEEDS: CreateUserData[] = [
   {
     username: "michael.ehrmantraut",
     email: "",
+    role: Role.PEASANT,
     password: "p4ssw0rd",
   },
   {
