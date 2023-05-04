@@ -1,4 +1,4 @@
-import { User } from "../../orm/entities/User";
+import User from "../../orm/entities/User";
 import { omit } from "../utils/objects";
 import { hashPassword, setPassword } from "./auth";
 

@@ -1,7 +1,7 @@
-import { Config } from "../Config";
-import { setupDataSource } from "../orm/config/setupDataSource";
+import Config from "../Config";
+import setupDataSource from "../orm/config/setupDataSource";
 
-export const createDatabase = (): Promise<void> => {
+const createDatabase = (): Promise<void> => {
   console.log("Initializing setupDataSource...");
 
   return setupDataSource.initialize().then((ds) => {
@@ -14,6 +14,8 @@ export const createDatabase = (): Promise<void> => {
     });
   });
 };
+
+export default createDatabase;
 
 if (require.main === module) {
   createDatabase()

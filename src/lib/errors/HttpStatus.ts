@@ -1,7 +1,7 @@
 import { splitSnake } from "../utils/strings";
 
 // From https://github.com/nestjs/nest/blob/85966703ac57a5b263ab5807033f6ac78548c0ef/packages/common/enums/http-status.enum.ts
-export enum HttpStatus {
+enum HttpStatus {
   CONTINUE = 100,
   SWITCHING_PROTOCOLS = 101,
   PROCESSING = 102,
@@ -51,6 +51,8 @@ export enum HttpStatus {
   GATEWAY_TIMEOUT = 504,
   HTTP_VERSION_NOT_SUPPORTED = 505,
 }
+
+export default HttpStatus;
 
 export const titleForStatus = (statusCode: HttpStatus): string => {
   const rawTitle = HttpStatus[statusCode];

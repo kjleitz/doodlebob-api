@@ -1,6 +1,6 @@
-import { BaseError } from "../BaseError";
+import AppError from "../AppError";
 
-export class PasswordMismatchError extends BaseError {
+export default class PasswordMismatchError extends AppError {
   constructor(message = "Username and/or password is incorrect") {
     super(message);
   }

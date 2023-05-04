@@ -1,6 +1,6 @@
-import { BaseError } from "../BaseError";
+import AppError from "../AppError";
 
-export class UnrecognizedEntityError extends BaseError {
+export default class UnrecognizedEntityError extends AppError {
   constructor(entity: any) {
     super(`Unknown entity: ${JSON.stringify(entity)}`);
   }

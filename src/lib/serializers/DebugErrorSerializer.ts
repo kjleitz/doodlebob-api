@@ -1,8 +1,10 @@
 import { ErrorSerializer, JapiError } from "ts-japi";
-import { BaseError } from "../errors/BaseError";
+import AppError from "../errors/AppError";
 
-export const DebugErrorSerializer = new ErrorSerializer<Error | JapiError | BaseError>({
+const DebugErrorSerializer = new ErrorSerializer<Error | JapiError | AppError>({
   attributes: {
     detail: "stack",
   },
 });
+
+export default DebugErrorSerializer;

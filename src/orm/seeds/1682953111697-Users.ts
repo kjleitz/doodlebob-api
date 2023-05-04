@@ -1,5 +1,5 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
-import { User } from "../entities/User";
+import User from "../entities/User";
 import { CreateUserData, buildUser } from "../../lib/users/userData";
 
 const USER_SEEDS: CreateUserData[] = [
@@ -59,9 +59,7 @@ export class Users1682953111697 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const userRepository = queryRunner.manager.getRepository(User);
 
-    const saves = USER_SEEDS.map((seed) =>
-      buildUser(seed).then((user) => userRepository.save(user)),
-    );
+    const saves = USER_SEEDS.map((seed) => buildUser(seed).then((user) => userRepository.save(user)));
 
     await Promise.all(saves);
   }

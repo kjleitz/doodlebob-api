@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
-import { User } from "../../orm/entities/User";
-import { PasswordMismatchError } from "../errors/app/PasswordMismatchError";
+import User from "../../orm/entities/User";
+import PasswordMismatchError from "../errors/app/PasswordMismatchError";
 
 const SALT_ROUNDS = 10;
 

@@ -4,16 +4,16 @@ import {
   FindRelationsNotFoundError,
   PersistedEntityNotFoundError,
 } from "typeorm";
-import { HttpError } from "../HttpError";
-import { MissingActionError } from "../app/MissingActionError";
-import { PasswordMismatchError } from "../app/PasswordMismatchError";
-import { InternalServerError } from "./InternalServerError";
-import { NotFoundError } from "./NotFoundError";
-import { UnauthorizedError } from "./UnauthorizedError";
-import { UnprocessableEntityError } from "./UnprocessableEntityError";
-import { Config } from "../../../Config";
+import HttpError from "../HttpError";
+import MissingActionError from "../app/MissingActionError";
+import PasswordMismatchError from "../app/PasswordMismatchError";
+import InternalServerError from "./InternalServerError";
+import NotFoundError from "./NotFoundError";
+import UnauthorizedError from "./UnauthorizedError";
+import UnprocessableEntityError from "./UnprocessableEntityError";
+import Config from "../../../Config";
 
-export const mapToHttpError = (error: any): HttpError => {
+const mapToHttpError = (error: any): HttpError => {
   // Nullish/empty error:
   if (!error) return new InternalServerError(InternalServerError.DEFAULT_MESSAGE);
 
@@ -36,3 +36,5 @@ export const mapToHttpError = (error: any): HttpError => {
     ? new InternalServerError(InternalServerError.DEFAULT_MESSAGE, error)
     : new InternalServerError(error.message || error.detail || InternalServerError.DEFAULT_MESSAGE, error);
 };
+
+export default mapToHttpError;

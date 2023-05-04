@@ -1,6 +1,6 @@
-import { BaseError } from "../BaseError";
+import AppError from "../AppError";
 
-export class MissingActionError extends BaseError {
+export default class MissingActionError extends AppError {
   actionName: string;
 
   constructor(actionName: string) {

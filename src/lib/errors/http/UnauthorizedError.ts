@@ -1,7 +1,7 @@
-import { HttpError } from "../HttpError";
-import { HttpStatus } from "../HttpStatus";
+import HttpError from "../HttpError";
+import HttpStatus from "../HttpStatus";
 
-export class UnauthorizedError extends HttpError {
+export default class UnauthorizedError extends HttpError {
   static DEFAULT_MESSAGE = "Authentication failed.";
 
   constructor(message = UnauthorizedError.DEFAULT_MESSAGE, original?: any) {

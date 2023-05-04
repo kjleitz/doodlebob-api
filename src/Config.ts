@@ -36,7 +36,7 @@ const DEFAULT_ORM_LOGGING = true;
 // definitely specify one in your env vars.
 const generateDefaultJwtSecret = (): string => crypto.randomBytes(32).toString("hex");
 
-export class Config {
+export default class Config {
   static readonly env = (NODE_ENV as NodeEnv | undefined) ?? NodeEnv.DEV;
   static readonly port = PORT ? parseInt(PORT, 10) : DEFAULT_PORT;
   static readonly pgHost = PG_HOST ?? DEFAULT_PG_HOST;

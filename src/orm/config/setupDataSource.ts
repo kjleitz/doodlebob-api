@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { Config } from "../../Config";
+import Config from "../../Config";
 
-export const setupDataSource = new DataSource({
+const setupDataSource = new DataSource({
   type: "postgres",
   host: Config.pgHost,
   port: Config.pgPort,
@@ -12,3 +12,5 @@ export const setupDataSource = new DataSource({
   synchronize: false,
   logging: Config.ormLogging,
 });
+
+export default setupDataSource;

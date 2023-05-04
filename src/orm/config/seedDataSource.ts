@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { Config } from "../../Config";
+import Config from "../../Config";
 
-export const seedDataSource = new DataSource({
+const seedDataSource = new DataSource({
   type: "postgres",
   host: Config.pgHost,
   port: Config.pgPort,
@@ -14,3 +14,5 @@ export const seedDataSource = new DataSource({
   entities: ["src/orm/entities/**/*.ts"],
   migrations: ["src/orm/seeds/**/*.ts"],
 });
+
+export default seedDataSource;
