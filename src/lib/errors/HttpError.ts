@@ -1,13 +1,32 @@
-import { BaseError } from "./BaseError";
+import { JapiError } from "ts-japi";
 import { HttpStatus, titleForStatus } from "./HttpStatus";
+import { Config } from "../../Config";
+import { DebugErrorSerializer } from "../serializers/DebugErrorSerializer";
+import { BaseError } from "./BaseError";
 
-export class HttpError extends BaseError {
-  statusCode: HttpStatus;
-  title: string;
+export class HttpError extends JapiError {
+  static DEFAULT_MESSAGE = "An error occurred.";
 
-  constructor(statusCode: HttpStatus, message: string) {
-    super(message);
+  readonly statusCode: HttpStatus;
+  message: string;
+
+  constructor(statusCode: HttpStatus, detail: string, original?: any) {
+    super({
+      status: `${statusCode}`,
+      code: HttpStatus[statusCode],
+      title: titleForStatus(statusCode),
+      detail,
+    });
+
     this.statusCode = statusCode;
-    this.title = titleForStatus(this.statusCode);
+    this.message = detail;
+
+    if (original && !Config.isProd) {
+      if (original instanceof Error || original instanceof JapiError || original instanceof BaseError) {
+        this.meta = { original: DebugErrorSerializer.serialize(original) };
+      } else {
+        this.meta = { original };
+      }
+    }
   }
 }

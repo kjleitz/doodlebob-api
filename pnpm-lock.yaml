@@ -28,6 +28,9 @@ dependencies:
   reflect-metadata:
     specifier: ^0.1.13
     version: 0.1.13
+  ts-japi:
+    specifier: ^1.8.0
+    version: 1.8.0
   typeorm:
     specifier: ^0.3.15
     version: 0.3.15(pg@8.10.0)(ts-node@10.9.1)
@@ -3365,6 +3368,11 @@ packages:
     resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
     hasBin: true
     dev: true
+
+  /ts-japi@1.8.0:
+    resolution: {integrity: sha512-77cNpz1CMJsImcikE7gnihMKOME4c/prCaruBmr7yMRHGnmEt1llFyJbuokXCaEmm0hERPv2VlzTyZ+pb43leg==}
+    engines: {node: '>=10'}
+    dev: false
 
   /ts-node-dev@2.0.0(@types/node@18.16.2)(typescript@5.0.4):
     resolution: {integrity: sha512-ywMrhCfH6M75yftYvrvNarLEY+SUXtUvU8/0Z6llrHQVBx12GiFk5sStF8UdfE/yfzk9IAq7O5EEbTQsxlBI8w==}

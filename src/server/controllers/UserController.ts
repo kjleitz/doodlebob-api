@@ -1,13 +1,12 @@
-import { appDataSource } from "../orm/config/appDataSource";
+import { appDataSource } from "../../orm/config/appDataSource";
 import { NextFunction, Request, Response } from "express";
-import { User } from "../orm/entities/User";
+import { User } from "../../orm/entities/User";
 import { BaseController } from "./BaseController";
-import { CreateUserData, UpdateUserData, buildUser, editUser } from "../lib/users/userData";
-import { comparePassword } from "../lib/users/auth";
-// import { NotFoundError } from "../errors/NotFoundError";
+import { CreateUserData, UpdateUserData, buildUser, editUser } from "../../lib/users/userData";
+import { comparePassword } from "../../lib/users/auth";
 
-// TODO: serializers (explicit or handler?)
-export class UserController extends BaseController {
+// TODO: validators
+export class UsersController extends BaseController {
   private userRepository = appDataSource.getRepository(User);
 
   index(request: Request, response: Response, next: NextFunction) {
@@ -21,12 +20,8 @@ export class UserController extends BaseController {
   }
 
   create(request: Request, response: Response, next: NextFunction) {
-    // TODO: JSON:API spec
     const { username, email, password } = request.body as CreateUserData;
-
-    return buildUser({ username, email, password }).then((user) => {
-      this.userRepository.save(user);
-    });
+    return buildUser({ username, email, password }).then((user) => this.userRepository.save(user));
   }
 
   update(request: Request, response: Response, next: NextFunction) {
@@ -44,9 +39,6 @@ export class UserController extends BaseController {
 
   destroy(request: Request, response: Response, next: NextFunction) {
     const { id } = request.params;
-
-    return this.userRepository.findOneByOrFail({ id }).then((user) => {
-      return this.userRepository.remove(user);
-    });
+    return this.userRepository.findOneByOrFail({ id }).then((user) => this.userRepository.remove(user));
   }
 }

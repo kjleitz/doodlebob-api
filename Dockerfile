@@ -5,12 +5,12 @@ RUN npm i -g pnpm
 RUN mkdir -p /app/
 WORKDIR /app/
 
-COPY package.json pnpm-lock.yaml ./
+COPY pnpm-lock.yaml ./
 RUN pnpm fetch
 
 ADD . ./
 
-RUN pnpm install -r --frozen-lockfile
+RUN pnpm install --offline
 RUN pnpm run build
 
 EXPOSE 4000

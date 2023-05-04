@@ -44,9 +44,7 @@ export function userDataFromEntity(userEntity: User): UserData {
 
 // Hashing passwords should be done asynchronously, so this can only be used if
 // a password is not included in the data.
-export function buildUserSync(
-  userData: Omit<CreateUserData, "password"> & { password?: never },
-): User {
+export function buildUserSync(userData: Omit<CreateUserData, "password"> & { password?: never }): User {
   const user = new User();
   user.username = userData.username;
   if (userData.email) user.email = userData.email;
