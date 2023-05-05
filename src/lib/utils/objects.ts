@@ -6,6 +6,13 @@ export function omit<O extends Record<string, any>, K extends keyof O>(obj: O, .
   return copy;
 }
 
+export function pick<O extends Record<string, any>, K extends keyof O>(obj: O, ...keys: K[]): Pick<O, K> {
+  return keys.reduce((permitted, key) => {
+    permitted[key] = obj[key];
+    return permitted;
+  }, {} as Pick<O, K>);
+}
+
 export function isObject(value: any): boolean {
   return Object.prototype.toString.call(value) === "[object Object]";
 }

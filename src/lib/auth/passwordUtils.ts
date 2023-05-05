@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import User from "../../orm/entities/User";
 import PasswordMismatchError from "../errors/app/PasswordMismatchError";
-import { nullish } from "../utils/types";
+import { Nullish } from "../utils/types";
 
 const SALT_ROUNDS = 10;
 
@@ -10,7 +10,7 @@ export function hashPassword(password: string): Promise<string> {
 }
 
 // Resolves to the user if password is correct, catches if incorrect.
-export function comparePassword(user: User | nullish, password: string): Promise<User> {
+export function comparePassword(user: User | Nullish, password: string): Promise<User> {
   if (!user) return Promise.reject(new PasswordMismatchError());
 
   return bcrypt.compare(password, user.passwordHash || "").then((confirmed) => {

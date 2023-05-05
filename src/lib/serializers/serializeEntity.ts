@@ -1,15 +1,15 @@
 import { Serializer } from "ts-japi";
-import User from "../../orm/entities/User";
-import UserDataSerializer from "./UserDataSerializer";
-import { userDataFromEntity } from "../users/userData";
-import UnrecognizedEntityError from "../errors/app/UnrecognizedEntityError";
-
-export type DoodlebobEntity = User;
+import serializerForEntity, { DoodlebobEntity } from "./serializerForEntity";
 
 const serializeEntity = <E extends DoodlebobEntity>(entity: E): ReturnType<Serializer<E>["serialize"]> => {
-  if (entity instanceof User) return UserDataSerializer.serialize(userDataFromEntity(entity));
-
-  return Promise.reject(new UnrecognizedEntityError(entity));
+  return new Promise<Serializer<E>>((resolve, reject) => {
+    try {
+      const serializer = serializerForEntity(entity);
+      resolve(serializer);
+    } catch (e) {
+      reject(e);
+    }
+  }).then((serializer) => serializer.serialize(entity));
 };
 
 export default serializeEntity;

@@ -1,40 +1,62 @@
-import { comparePassword } from "../../lib/users/auth";
-import { CreateUserData, UpdateUserData, buildUser, editUser } from "../../lib/users/userData";
 import appDataSource from "../../orm/config/appDataSource";
 import User from "../../orm/entities/User";
 import Controller, { Verb } from "../Controller";
+import adminGate from "../middleware/gates/adminGate";
+import authGate from "../middleware/gates/authGate";
+import ownGate from "../middleware/gates/ownGate";
+import deserializeUserAdminCreate from "../../lib/deserializers/users/deserializeUserAdminCreate";
+import buildUser from "../../lib/builders/users/buildUser";
+import deserializeUserUpdate from "../../lib/deserializers/users/deserializeUserUpdate";
+import editUser from "../../lib/builders/users/editUser";
+import Role from "../../lib/auth/Role";
+import editUserAdmin from "../../lib/builders/users/editUserAdmin";
+import deserializeUserAdminUpdate from "../../lib/deserializers/users/deserializeUserAdminUpdate";
+import deserializeUserCreate from "../../lib/deserializers/users/deserializeUserCreate";
+import UnprocessableEntityError from "../../lib/errors/http/UnprocessableEntityError";
+import Resource from "ts-japi/lib/models/resource.model";
+import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreateAttributes";
+import UserAdminUpdateAttributes from "../../lib/permitters/users/UserAdminUpdateAttributes";
 
 const users = new Controller();
 const userRepository = appDataSource.getRepository(User);
 
-users.on(Verb.GET, "/", [], () => {
+users.on(Verb.GET, "/", [authGate], () => {
   return userRepository.find();
 });
 
-users.on(Verb.GET, "/:id", [], (req) => {
+users.on(Verb.GET, "/:id", [authGate, ownGate], (req) => {
   const { id } = req.params;
   return userRepository.findOneByOrFail({ id });
 });
 
-users.on(Verb.POST, "/", [], (req) => {
-  const { username, email, password } = req.body as CreateUserData;
-  return buildUser({ username, email, password }).then((user) => userRepository.save(user));
+users.on(Verb.POST, "/", [authGate, adminGate], (req) => {
+  const data = req.body.data as Resource<UserAdminCreateAttributes>;
+  if (!data) throw new UnprocessableEntityError();
+
+  // This action is admin-gated, so this is unnecessary. However, we'll double-
+  // check here, just to be safe, in case that gate is removed in the future
+  // without a corresponding change to the logic.
+  const asAdmin = req.jwtUserClaims?.role === Role.ADMIN;
+  const attrs = asAdmin ? deserializeUserCreate(data) : deserializeUserAdminCreate(data);
+
+  return buildUser(attrs).then((user) => userRepository.save(user));
 });
 
-users.on([Verb.PATCH, Verb.PUT], "/:id", [], (req) => {
+users.on([Verb.PATCH, Verb.PUT], "/:id", [authGate, ownGate], (req) => {
   const { id } = req.params;
-  const { username, email, newPassword, oldPassword } = req.body as UpdateUserData;
+  const data = req.body.data as Resource<UserAdminUpdateAttributes>;
+  if (!data) throw new UnprocessableEntityError();
 
-  return userRepository.findOneByOrFail({ id }).then((user) => {
-    if (!newPassword) return userRepository.update(id, { username, email });
+  const asAdmin = req.jwtUserClaims?.role === Role.ADMIN;
+  const attrs = asAdmin ? deserializeUserAdminUpdate(data) : deserializeUserUpdate(data);
 
-    return comparePassword(user, oldPassword)
-      .then(() => editUser({ username, email, newPassword, oldPassword }))
-      .then((updatedAttrs) => userRepository.update(id, updatedAttrs));
-  });
+  return userRepository
+    .findOneByOrFail({ id })
+    .then((user) => (asAdmin ? editUserAdmin(user, attrs) : editUser(user, attrs)))
+    .then((edits) => userRepository.update(id, edits));
 });
 
-users.on(Verb.DELETE, "/", [], (req) => {
+users.on(Verb.DELETE, "/:id", [authGate, ownGate], (req) => {
   const { id } = req.params;
   return userRepository.findOneByOrFail({ id }).then((user) => userRepository.remove(user));
 });

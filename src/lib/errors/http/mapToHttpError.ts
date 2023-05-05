@@ -12,6 +12,7 @@ import NotFoundError from "./NotFoundError";
 import UnauthorizedError from "./UnauthorizedError";
 import UnprocessableEntityError from "./UnprocessableEntityError";
 import Config from "../../../Config";
+import UnknownJwtError from "../app/UnknownJwtError";
 
 const mapToHttpError = (error: any): HttpError => {
   // Nullish/empty error:
@@ -22,7 +23,8 @@ const mapToHttpError = (error: any): HttpError => {
 
   // App errors:
   if (error instanceof MissingActionError) return new NotFoundError("Action", error.actionName, error);
-  if (error instanceof PasswordMismatchError) return new UnauthorizedError(UnauthorizedError.DEFAULT_MESSAGE, error);
+  if (error instanceof PasswordMismatchError) return new UnauthorizedError(error.message, error);
+  if (error instanceof UnknownJwtError) return new UnauthorizedError(error.message, error);
 
   // TypeORM errors:
   if (error instanceof EntityNotFoundError) return new NotFoundError("Entity", undefined, error);

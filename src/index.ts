@@ -6,9 +6,10 @@ import appDataSource from "./orm/config/appDataSource";
 import Config from "./Config";
 import errorHandler from "./server/middleware/handlers/errorHandler";
 import router from "./server/router";
+import setJwtUserClaims from "./server/middleware/prep/setJwtUserClaims";
 
 // Init
-const app = express();
+export const app = express();
 
 // Settings
 app.set("env", Config.env);
@@ -18,6 +19,7 @@ app.use(cors());
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(setJwtUserClaims);
 
 // Routes
 app.use("/", router);
@@ -25,12 +27,14 @@ app.use("/", router);
 // Post-route middleware
 app.use(errorHandler);
 
-// Database
-appDataSource
-  .initialize()
-  .then(() => {
-    // Run
-    app.listen(Config.port);
-    console.log(`Server listening on port ${Config.port}`);
-  })
-  .catch((error) => console.log(error));
+if (require.main === module) {
+  // Database
+  appDataSource
+    .initialize()
+    .then(() => {
+      // Run
+      app.listen(Config.port);
+      console.log(`Server listening on port ${Config.port}`);
+    })
+    .catch((error) => console.log(error));
+}

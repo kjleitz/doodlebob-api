@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
-import Role from "../../lib/users/Role";
+import Role from "../../lib/auth/Role";
 
 @Entity()
 // @Index(["name"], {unique: true}, "WHERE (key is NOT IN(conditional_col_b));")
