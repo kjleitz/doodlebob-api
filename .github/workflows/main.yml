@@ -16,7 +16,7 @@ jobs:
   validate:
     name: Test and lint
     runs-on: ubuntu-latest
-    container: node:20-alpine3.17
+    # container: node:20-alpine3.17
 
     services:
       database:
