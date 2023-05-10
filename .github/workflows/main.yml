@@ -16,6 +16,7 @@ jobs:
   validate:
     name: Test and lint
     runs-on: ubuntu-latest
+    container: node:20-bullseye
 
     services:
       database:
@@ -47,10 +48,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
+      # - name: Install Node.js
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 20
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
