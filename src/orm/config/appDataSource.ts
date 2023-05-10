@@ -15,8 +15,8 @@ const appDataSource = new DataSource({
   entities: [User],
   // I don't know if any of these glob patterns actually work. They certainly
   // don't work for the `entities` key.
-  migrations: ["src/orm/migrations/**/*{.js,.ts}", "build/orm/migrations/**/*{.js,.ts}"],
-  subscribers: ["src/orm/migrations/**/*{.js,.ts}", "build/orm/subscribers/**/*{.js,.ts}"],
+  migrations: ["src/orm/migrations/**/*{.js,.ts}"],
+  subscribers: ["src/orm/migrations/**/*{.js,.ts}"],
 });
 
 export default appDataSource;

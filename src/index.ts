@@ -1,6 +1,7 @@
 import bodyParser from "body-parser";
 import cors from "cors";
 import express from "express";
+import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import appDataSource from "./orm/config/appDataSource";
 import Config from "./Config";
@@ -17,6 +18,7 @@ app.set("env", Config.env);
 // Pre-route middleware
 app.use(cors());
 app.use(helmet());
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(setJwtUserClaims);

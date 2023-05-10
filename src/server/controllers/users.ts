@@ -16,6 +16,8 @@ import UnprocessableEntityError from "../../lib/errors/http/UnprocessableEntityE
 import Resource from "ts-japi/lib/models/resource.model";
 import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreateAttributes";
 import UserAdminUpdateAttributes from "../../lib/permitters/users/UserAdminUpdateAttributes";
+import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
+import HttpStatus from "../../lib/errors/HttpStatus";
 
 const users = new Controller();
 const userRepository = appDataSource.getRepository(User);
@@ -29,7 +31,7 @@ users.on(Verb.GET, "/:id", [authGate, ownGate], (req) => {
   return userRepository.findOneByOrFail({ id });
 });
 
-users.on(Verb.POST, "/", [authGate, adminGate], (req) => {
+users.on(Verb.POST, "/", [authGate, adminGate], (req, res) => {
   const data = req.body.data as Resource<UserAdminCreateAttributes>;
   if (!data) throw new UnprocessableEntityError();
 
@@ -37,9 +39,14 @@ users.on(Verb.POST, "/", [authGate, adminGate], (req) => {
   // check here, just to be safe, in case that gate is removed in the future
   // without a corresponding change to the logic.
   const asAdmin = req.jwtUserClaims?.role === Role.ADMIN;
-  const attrs = asAdmin ? deserializeUserCreate(data) : deserializeUserAdminCreate(data);
+  const attrs = asAdmin ? deserializeUserAdminCreate(data) : deserializeUserCreate(data);
 
-  return buildUser(attrs).then((user) => userRepository.save(user));
+  return (asAdmin ? buildUserAdmin(attrs) : buildUser(attrs))
+    .then((user) => userRepository.save(user))
+    .then((user) => {
+      res.status(HttpStatus.CREATED);
+      return user;
+    });
 });
 
 users.on([Verb.PATCH, Verb.PUT], "/:id", [authGate, ownGate], (req) => {
@@ -53,7 +60,10 @@ users.on([Verb.PATCH, Verb.PUT], "/:id", [authGate, ownGate], (req) => {
   return userRepository
     .findOneByOrFail({ id })
     .then((user) => (asAdmin ? editUserAdmin(user, attrs) : editUser(user, attrs)))
-    .then((edits) => userRepository.update(id, edits));
+    .then((edits) => {
+      if (!edits.id) throw new Error("Hey, no ID!");
+      return userRepository.save(edits);
+    });
 });
 
 users.on(Verb.DELETE, "/:id", [authGate, ownGate], (req) => {

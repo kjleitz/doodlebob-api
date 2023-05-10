@@ -3,7 +3,8 @@ import mapToHttpError from "../../../lib/errors/http/mapToHttpError";
 import HttpErrorSerializer from "../../../lib/serializers/HttpErrorSerializer";
 
 const errorHandler: ErrorRequestHandler = (error, request, response, next) => {
-  console.error(error);
+  // TODO: real logger
+  // console.error(error);
   const httpError = mapToHttpError(error);
   const responseJson = HttpErrorSerializer.serialize(httpError);
   return response.status(httpError.statusCode).json(responseJson);

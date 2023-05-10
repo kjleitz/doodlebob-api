@@ -2,9 +2,12 @@ import jwt, { SignOptions } from "jsonwebtoken";
 import Config from "../../Config";
 import UnknownJwtError from "../errors/app/UnknownJwtError";
 
-export default function jwtTokenForClaims(claims: Record<string, any>): Promise<string> {
+export default function jwtTokenForClaims(
+  claims: Record<string, any>,
+  expiresIn: SignOptions["expiresIn"],
+): Promise<string> {
   const jwtOptions: SignOptions = {
-    expiresIn: Config.jwtExp,
+    expiresIn,
     issuer: `doodlebob-${Config.env}`,
     algorithm: "HS256",
   };

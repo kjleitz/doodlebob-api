@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { parseBool } from "./lib/utils/parsing";
 
 export enum NodeEnv {
+  TEST = "test",
   DEV = "development",
   STAGING = "staging",
   PROD = "production",
@@ -17,6 +18,7 @@ const {
   POSTGRES_DB,
   JWT_SECRET,
   JWT_EXPIRATION,
+  JWT_REFRESH_EXPIRATION,
   TYPEORM_SYNCHRONIZE,
   TYPEORM_LOGGING,
 } = process.env;
@@ -28,6 +30,7 @@ const DEFAULT_PG_USER = "postgres";
 const DEFAULT_PG_PASS = "postgres";
 const DEFAULT_DB_NAME = `doodlebob-${NODE_ENV ?? NodeEnv.DEV}`;
 const DEFAULT_JWT_EXP = "15m";
+const DEFAULT_JWT_REFRESH_EXP = "30d";
 const DEFAULT_ORM_SYNC = false;
 const DEFAULT_ORM_LOGGING = true;
 
@@ -46,15 +49,29 @@ export default class Config {
   static readonly dbName = POSTGRES_DB ?? DEFAULT_DB_NAME;
   static readonly jwtSecret = JWT_SECRET ?? generateDefaultJwtSecret();
   static readonly jwtExp = JWT_EXPIRATION ?? DEFAULT_JWT_EXP;
+  static readonly jwtRefreshExp = JWT_REFRESH_EXPIRATION ?? DEFAULT_JWT_REFRESH_EXP;
   static readonly ormSync = parseBool(TYPEORM_SYNCHRONIZE) ?? DEFAULT_ORM_SYNC;
   static readonly ormLogging = parseBool(TYPEORM_LOGGING) ?? DEFAULT_ORM_LOGGING;
+
+  // NB: This is currently not used; tests are run in NodeEnv.DEV right now.
+  static get isTest(): boolean {
+    return this.env === NodeEnv.TEST;
+  }
 
   static get isDev(): boolean {
     return this.env === NodeEnv.DEV;
   }
 
+  static get isLocal(): boolean {
+    return this.isTest || this.isDev;
+  }
+
   static get isStaging(): boolean {
     return this.env === NodeEnv.STAGING;
+  }
+
+  static get isPreProd(): boolean {
+    return this.isStaging;
   }
 
   static get isProd(): boolean {

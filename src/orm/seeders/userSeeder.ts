@@ -1,10 +1,10 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
-import User from "../entities/User";
 import Role from "../../lib/auth/Role";
-import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreateAttributes";
 import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
+import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreateAttributes";
+import Seeder from "../Seeder";
+import User from "../entities/User";
 
-const USER_SEEDS: UserAdminCreateAttributes[] = [
+export const USER_SEEDS: UserAdminCreateAttributes[] = [
   {
     username: "admin",
     email: "admin@admin.com",
@@ -60,22 +60,10 @@ const USER_SEEDS: UserAdminCreateAttributes[] = [
   },
 ];
 
-export class Users1682953111697 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    const userRepository = queryRunner.manager.getRepository(User);
+const userSeeder: Seeder<User[]> = (entityManager) => {
+  const userRepository = entityManager.getRepository(User);
+  const saves = USER_SEEDS.map((seed) => buildUserAdmin(seed).then((user) => userRepository.save(user)));
+  return Promise.all(saves);
+};
 
-    const saves = USER_SEEDS.map((seed) => buildUserAdmin(seed).then((user) => userRepository.save(user)));
-
-    await Promise.all(saves);
-  }
-
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    const userRepository = queryRunner.manager.getRepository(User);
-
-    const deletes = USER_SEEDS.map(({ username }) =>
-      userRepository.findOneBy({ username }).then((user) => user && userRepository.delete(user.id)),
-    );
-
-    await Promise.all(deletes);
-  }
-}
+export default userSeeder;
