@@ -14,7 +14,6 @@ import Role from "../../lib/auth/Role";
 import truncateDatabase from "../../orm/truncateDatabase";
 import userSeeder from "../../orm/seeders/userSeeder";
 import runSeeder from "../../orm/runSeeder";
-import seedDatabase from "../../setup/seedDatabase";
 
 const MY_USER = "skyler.white";
 const OTHER_USER = "marie.schrader";
@@ -293,6 +292,56 @@ describe("Users", () => {
             });
         });
       });
+    });
+  });
+
+  describe("destroy", () => {
+    it("requires auth", () => {
+      dirty = true;
+
+      return getUser(MY_USER)
+        .then(({ id }) => agent(app).delete(`/users/${id}`).send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
+        });
+    });
+
+    it("requires you to be the user", () => {
+      dirty = true;
+
+      return getUser(OTHER_USER)
+        .then(({ id }) => signIn(MY_USER).then((authed) => authed.delete(`/users/${id}`).send()))
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.FORBIDDEN);
+        });
+    });
+
+    it("allows a user to delete themselves", () => {
+      dirty = true;
+
+      return getUser(MY_USER)
+        .then(({ id }) => signIn(MY_USER).then((authed) => authed.delete(`/users/${id}`).send()))
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          return userRepository.findOneBy({ username: MY_USER });
+        })
+        .then((user) => {
+          expect(user).to.be.null;
+        });
+    });
+
+    it("allows an admin user to delete arbitrary users", () => {
+      dirty = true;
+
+      return getUser(MY_USER)
+        .then(({ id }) => signIn(ADMIN_USER).then((authed) => authed.delete(`/users/${id}`).send()))
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          return userRepository.findOneBy({ username: MY_USER });
+        })
+        .then((user) => {
+          expect(user).to.be.null;
+        });
     });
   });
 });

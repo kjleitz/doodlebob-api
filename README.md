@@ -62,6 +62,8 @@ Migrations are run automatically when starting up the development server, but it
 pnpm docker:migration:run
 ```
 
+## Common tasks
+
 ### Run the server
 
 Run the development server (essentially just a `docker compose up` with the dev docker-compose file):
@@ -71,6 +73,16 @@ pnpm docker:dev
 ```
 
 If for whatever reason you need to tear down the containers/networks/etc., you can run `pnpm run docker:dev:down` which is basically just a `docker compose down` wrapped in a similar fashion to the above.
+
+### Run the tests
+
+Run the tests like so:
+
+```
+pnpm docker:test
+```
+
+You don't need to have the server running before you do this.
 
 ### Generate migrations
 
@@ -87,16 +99,6 @@ You'll want to run that migration pretty much immediately afterward:
 ```
 pnpm docker:migration:run
 ```
-
-### Run the tests
-
-Run the tests like so:
-
-```
-pnpm docker:test
-```
-
-You don't need to have the server running before you do this.
 
 ### Run stuff in the Docker context
 
