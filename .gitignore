@@ -19,3 +19,4 @@ log/*
 .env.*
 !.env.example
 !.env.environment.example
+!.env.test
