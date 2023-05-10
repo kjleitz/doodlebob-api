@@ -6,12 +6,21 @@ const createDatabase = (): Promise<void> => {
 
   return setupDataSource.initialize().then((ds) => {
     console.log("Initialized setupDataSource.");
-    console.log(`Creating database ${Config.dbName}...`);
+    console.log(`Checking if database ${Config.dbName} already exists...`);
 
-    return ds.query(`CREATE DATABASE "${Config.dbName}"`).then((result) => {
-      console.log(result);
-      console.log(`Created database ${Config.dbName}.`);
-    });
+    return ds
+      .query(`SELECT EXISTS (SELECT * FROM pg_database WHERE datname = '${Config.dbName}')`)
+      .then(([{ exists }]) => {
+        if (exists) {
+          console.log(`Database ${Config.dbName} already exists. Skipping...`);
+        } else {
+          console.log(`Database ${Config.dbName} does not yet exist. Creating...`);
+          return ds.query(`CREATE DATABASE "${Config.dbName}"`).then((result) => {
+            console.log(result);
+            console.log(`Created database ${Config.dbName}.`);
+          });
+        }
+      });
   });
 };
 
@@ -23,7 +32,7 @@ if (require.main === module) {
       process.exit();
     })
     .catch((error) => {
-      console.error("Error encountered while creating the database:", error);
+      console.error(`Error encountered while creating database ${Config.dbName}:`, error);
       process.exit(1);
     });
 }
