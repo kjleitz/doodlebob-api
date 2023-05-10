@@ -16,11 +16,12 @@ jobs:
   validate:
     name: Test and lint
     runs-on: ubuntu-latest
-    # container: node:20-alpine3.17
 
     services:
       database:
         image: postgres:14.2-alpine
+        ports:
+          - 5432:5432
         env:
           POSTGRES_DB: doodlebob-test
           POSTGRES_USER: postgres
