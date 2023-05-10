@@ -1,0 +1,32 @@
+version: "3"
+
+services:
+  database:
+    container_name: database
+    image: postgres:14.2-alpine
+    restart: always
+    env_file:
+      - .env.test
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/data:/var/lib/postgresql/data/
+
+  tests:
+    container_name: tests
+    image: doodlebob.api.test:${VERSION}
+    build: .
+    entrypoint: /bin/sh -c "pnpm db:create && pnpm migration:run && pnpm test"
+    restart: "no"
+    env_file:
+      - .env.test
+    depends_on:
+      - database
+    links:
+      - database
+    volumes:
+      - .:/app/
+      - node-modules:/app/node_modules
+
+volumes:
+  node-modules:

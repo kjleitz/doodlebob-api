@@ -29,7 +29,7 @@
     "docker:staging": "docker compose --file docker-compose.yml --file docker-compose.staging.yml up --build --remove-orphans",
     "docker:prod": "docker compose --file docker-compose.yml --file docker-compose.production.yml up --build --remove-orphans",
     "docker:prune": "docker image prune --force",
-    "docker:test": "docker compose run --rm api sh -c 'pnpm test'",
+    "docker:test": "docker compose --file docker-compose.test.yml up --build --abort-on-container-exit",
     "typeorm": "typeorm-ts-node-commonjs",
     "shell": "docker compose run --rm api sh"
   },

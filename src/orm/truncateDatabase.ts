@@ -1,4 +1,3 @@
-import { EntityMetadata } from "typeorm";
 import Config from "../Config";
 import initDataSource from "./initDataSource";
 

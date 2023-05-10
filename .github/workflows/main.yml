@@ -42,16 +42,11 @@ jobs:
       JWT_EXPIRATION: 15m
       JWT_REFRESH_EXPIRATION: 30d
       TYPEORM_SYNCHRONIZE: false
-      TYPEORM_LOGGING: true
+      TYPEORM_LOGGING: false
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      # - name: Install Node.js
-      #   uses: actions/setup-node@v3
-      #   with:
-      #     node-version: 20
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
@@ -78,13 +73,13 @@ jobs:
         run: pnpm install
 
       - name: Lint
-        run: pnpm run lint
+        run: pnpm lint
 
       - name: Build
-        run: pnpm run build
+        run: pnpm build
 
       - name: Create database
-        run: ./bin/doodlebob-db-create
+        run: pnpm db:create
 
       - name: Run migrations
         run: pnpm migration:run
