@@ -84,6 +84,47 @@ pnpm docker:test
 
 You don't need to have the server running before you do this.
 
+#### Run the tests interactively
+
+Open a shell in the test context:
+
+```
+pnpm docker:test:shell
+```
+
+Then run tests and whatever from within the shell:
+
+```
+pnpm test
+```
+
+This has the benefit of preserving color in the test output.
+
+The shell is also useful because it's easier to do more targeted tasks directly, like running specific test files:
+
+```
+pnpm exec mocha src/server/controllers/users.test.ts
+```
+
+...or running individual tests within a file, like this:
+
+
+```
+pnpm exec mocha src/server/controllers/users.test.ts --grep "returns your user info"
+```
+
+...or, more simply, if the "it" clause is actually unique (or you don't care about intruding cases):
+
+```
+pnpm run test --grep "returns your user info"
+```
+
+> **NB:** You can narrow down the case by including the strings from the ancestral `describe` clauses before the string from the target `it` clause:
+>
+> ```
+> pnpm run test --grep "Users controller Show returns your user info"
+> ```
+
 ### Generate migrations
 
 If you make changes to the entities or schema or whatever and you want to generate a migration file automatically to account for the database changes, then (while you have the server running), run:

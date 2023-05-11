@@ -60,10 +60,7 @@ users.on([Verb.PATCH, Verb.PUT], "/:id", [authGate, ownGate], (req) => {
   return userRepository
     .findOneByOrFail({ id })
     .then((user) => (asAdmin ? editUserAdmin(user, attrs) : editUser(user, attrs)))
-    .then((edits) => {
-      if (!edits.id) throw new Error("Hey, no ID!");
-      return userRepository.save(edits);
-    });
+    .then((edits) => userRepository.save(edits));
 });
 
 users.on(Verb.DELETE, "/:id", [authGate, ownGate], (req) => {

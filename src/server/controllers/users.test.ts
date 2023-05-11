@@ -38,7 +38,7 @@ const getUser = (username = MY_USER): Promise<User> => {
   return userRepository.findOneByOrFail({ username });
 };
 
-describe("Users", () => {
+describe("Users controller", () => {
   let dirty = false;
 
   before(() => {
@@ -61,7 +61,7 @@ describe("Users", () => {
         });
   });
 
-  describe("index", () => {
+  describe("Index", () => {
     it("requires auth", () => {
       return agent(app).get("/users").send().expect(HttpStatus.UNAUTHORIZED);
     });
@@ -76,7 +76,7 @@ describe("Users", () => {
     });
   });
 
-  describe("show", () => {
+  describe("Show", () => {
     it("requires auth", () => {
       return getUser().then(({ id }) => agent(app).get(`/users/${id}`).send().expect(HttpStatus.UNAUTHORIZED));
     });
@@ -104,7 +104,7 @@ describe("Users", () => {
     });
   });
 
-  describe("create", () => {
+  describe("Create", () => {
     it("requires auth", () => {
       dirty = true;
       const uuid = randomUUID();
@@ -202,7 +202,7 @@ describe("Users", () => {
     });
   });
 
-  describe("update", () => {
+  describe("Update", () => {
     it("requires auth", () => {
       dirty = true;
       let oldEmail: string;
@@ -262,6 +262,105 @@ describe("Users", () => {
       });
     });
 
+    it("requires the old password in order to update a user's password", () => {
+      dirty = true;
+      const password = "p4ssw0rd";
+      const newPassword = "thingamajig";
+      const oldPassword = undefined;
+      expect(oldPassword).not.to.equal(password);
+
+      return getUser(MY_USER).then(({ id }) => {
+        return DataSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
+          return (
+            signIn(MY_USER)
+              // Update to new password fails because old password is not supplied
+              .then((authed) => authed.patch(`/users/${id}`).send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
+              })
+              // Sign-in with new password fails
+              .then(() => LoginSerializer.serialize({ username: MY_USER, password: newPassword }))
+              .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
+              })
+              // Sign-in with old password still works
+              .then(() => LoginSerializer.serialize({ username: MY_USER, password }))
+              .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.OK);
+              })
+          );
+        });
+      });
+    });
+
+    it("requires the old password to be correct in order to update a user's password", () => {
+      dirty = true;
+      const password = "p4ssw0rd";
+      const newPassword = "thingamajig";
+      const oldPassword = "nopethisiswrong";
+      expect(oldPassword).not.to.equal(password);
+
+      return getUser(MY_USER).then(({ id }) => {
+        return DataSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
+          return (
+            signIn(MY_USER)
+              // Update to new password fails because old password is wrong
+              .then((authed) => authed.patch(`/users/${id}`).send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
+              })
+              // Sign-in with new password fails
+              .then(() => LoginSerializer.serialize({ username: MY_USER, password: newPassword }))
+              .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
+              })
+              // Sign-in with old password still works
+              .then(() => LoginSerializer.serialize({ username: MY_USER, password }))
+              .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.OK, JSON.stringify(response.body.errors));
+              })
+          );
+        });
+      });
+    });
+
+    it("allows the user to update their password", () => {
+      dirty = true;
+      const password = "p4ssw0rd";
+      const newPassword = "thingamajig";
+      const oldPassword = "p4ssw0rd";
+      expect(oldPassword).to.equal(password);
+
+      return getUser(MY_USER).then(({ id }) => {
+        return DataSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
+          return (
+            signIn(MY_USER)
+              // Update to new password succeeds
+              .then((authed) => authed.patch(`/users/${id}`).send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.OK);
+              })
+              // Sign-in with new password succeeds
+              .then(() => LoginSerializer.serialize({ username: MY_USER, password: newPassword }))
+              .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.OK);
+              })
+              // Sign-in with old password no longer works
+              .then(() => LoginSerializer.serialize({ username: MY_USER, password }))
+              .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
+              })
+          );
+        });
+      });
+    });
+
     it("prevents a peasant user from changing their role", () => {
       dirty = true;
       return getUser(MY_USER).then((user) => {
@@ -295,7 +394,7 @@ describe("Users", () => {
     });
   });
 
-  describe("destroy", () => {
+  describe("Destroy", () => {
     it("requires auth", () => {
       dirty = true;
 
