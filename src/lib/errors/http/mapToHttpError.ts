@@ -16,6 +16,7 @@ import Config from "../../../Config";
 import UnknownJwtError from "../app/UnknownJwtError";
 import EmptyJwtError from "../app/EmptyJwtError";
 import { capitalize } from "../../utils/strings";
+import InvalidInputError from "../app/InvalidInputError";
 
 const mapToHttpError = (error: any): HttpError => {
   // Nullish/empty error:
@@ -29,6 +30,7 @@ const mapToHttpError = (error: any): HttpError => {
   if (error instanceof PasswordMismatchError) return new UnauthorizedError(error.message, error);
   if (error instanceof UnknownJwtError) return new UnauthorizedError(error.message, error);
   if (error instanceof EmptyJwtError) return new UnauthorizedError(error.message, error);
+  if (error instanceof InvalidInputError) return new UnprocessableEntityError(error.message, error);
 
   // TypeORM errors:
   if (error instanceof EntityNotFoundError) return new NotFoundError("Entity", undefined, error);

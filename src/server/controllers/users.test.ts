@@ -276,7 +276,7 @@ describe("Users controller", () => {
               // Update to new password fails because old password is not supplied
               .then((authed) => authed.patch(`/users/${id}`).send(serialized))
               .then((response) => {
-                expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
+                expect(response.status).to.equal(HttpStatus.UNPROCESSABLE_ENTITY);
               })
               // Sign-in with new password fails
               .then(() => LoginSerializer.serialize({ username: MY_USER, password: newPassword }))

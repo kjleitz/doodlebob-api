@@ -8,7 +8,7 @@ import deserializeUserAdminCreate from "../../lib/deserializers/users/deserializ
 import buildUser from "../../lib/builders/users/buildUser";
 import deserializeUserUpdate from "../../lib/deserializers/users/deserializeUserUpdate";
 import editUser from "../../lib/builders/users/editUser";
-import Role from "../../lib/auth/Role";
+import Role, { ROLES } from "../../lib/auth/Role";
 import editUserAdmin from "../../lib/builders/users/editUserAdmin";
 import deserializeUserAdminUpdate from "../../lib/deserializers/users/deserializeUserAdminUpdate";
 import deserializeUserCreate from "../../lib/deserializers/users/deserializeUserCreate";
@@ -18,6 +18,8 @@ import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreat
 import UserAdminUpdateAttributes from "../../lib/permitters/users/UserAdminUpdateAttributes";
 import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
 import HttpStatus from "../../lib/errors/HttpStatus";
+import { validateUserCreateData } from "../../lib/validators/validateUserCreateData";
+import { validateUserUpdateData } from "../../lib/validators/validateUserUpdateData";
 
 const users = new Controller();
 const userRepository = appDataSource.getRepository(User);
@@ -33,7 +35,9 @@ users.on(Verb.GET, "/:id", [authGate, ownGate], (req) => {
 
 users.on(Verb.POST, "/", [authGate, adminGate], (req, res) => {
   const data = req.body.data as Resource<UserAdminCreateAttributes>;
-  if (!data) throw new UnprocessableEntityError();
+  if (!data || !data.attributes) throw new UnprocessableEntityError();
+
+  validateUserCreateData(data.attributes);
 
   // This action is admin-gated, so this is unnecessary. However, we'll double-
   // check here, just to be safe, in case that gate is removed in the future
@@ -52,7 +56,9 @@ users.on(Verb.POST, "/", [authGate, adminGate], (req, res) => {
 users.on([Verb.PATCH, Verb.PUT], "/:id", [authGate, ownGate], (req) => {
   const { id } = req.params;
   const data = req.body.data as Resource<UserAdminUpdateAttributes>;
-  if (!data) throw new UnprocessableEntityError();
+  if (!data || !data.attributes) throw new UnprocessableEntityError();
+
+  validateUserUpdateData(data.attributes);
 
   const asAdmin = req.jwtUserClaims?.role === Role.ADMIN;
   const attrs = asAdmin ? deserializeUserAdminUpdate(data) : deserializeUserUpdate(data);

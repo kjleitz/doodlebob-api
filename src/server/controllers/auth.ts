@@ -14,6 +14,10 @@ import getRefreshTokenFromRequest from "../middleware/helpers/getRefreshTokenFro
 import deleteTokensOnResponse from "../middleware/helpers/deleteTokensOnResponse";
 import HttpStatus from "../../lib/errors/HttpStatus";
 import authGate from "../middleware/gates/authGate";
+import { validateUserCreateData } from "../../lib/validators/validateUserCreateData";
+import UnprocessableEntityError from "../../lib/errors/http/UnprocessableEntityError";
+import UserCreateAttributes from "../../lib/permitters/users/UserCreateAttributes";
+import Resource from "ts-japi/lib/models/resource.model";
 
 const auth = new Controller();
 const userRepository = appDataSource.getRepository(User);
@@ -39,7 +43,12 @@ auth.on(Verb.POST, "/signIn", [], (req, res) => {
 });
 
 auth.on(Verb.POST, "/signUp", [], (req, res) => {
-  const attrs = deserializeUserCreate(req.body.data);
+  const data = req.body.data as Resource<UserCreateAttributes>;
+  if (!data || !data.attributes) throw new UnprocessableEntityError();
+
+  validateUserCreateData(data.attributes);
+
+  const attrs = deserializeUserCreate(data);
 
   return buildUser(attrs)
     .then((user) => userRepository.save(user))

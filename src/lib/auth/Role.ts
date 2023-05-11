@@ -8,3 +8,5 @@ enum Role {
 }
 
 export default Role;
+
+export const ROLES = [Role.PEASANT, Role.ADMIN];
