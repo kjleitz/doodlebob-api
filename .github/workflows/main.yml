@@ -43,6 +43,7 @@ jobs:
       JWT_REFRESH_EXPIRATION: 30d
       TYPEORM_SYNCHRONIZE: false
       TYPEORM_LOGGING: false
+      MAX_TOTAL_LOGS_SIZE: 1G
 
     steps:
       - name: Checkout

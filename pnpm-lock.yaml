@@ -31,6 +31,9 @@ dependencies:
   reflect-metadata:
     specifier: ^0.1.13
     version: 0.1.13
+  rotating-file-stream:
+    specifier: ^3.1.0
+    version: 3.1.0
   ts-japi:
     specifier: ^1.8.0
     version: 1.8.0
@@ -3058,6 +3061,11 @@ packages:
     dependencies:
       glob: 10.2.2
     dev: true
+
+  /rotating-file-stream@3.1.0:
+    resolution: {integrity: sha512-TkMF6cP1/QDcon9D71mjxHoflNuznNOrY5JJQfuxkKklZRmoow/lWBLNxXVjb6KcjAU8BDCV145buLgOx9Px1Q==}
+    engines: {node: '>=14.0'}
+    dev: false
 
   /run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}

@@ -21,6 +21,7 @@ const {
   JWT_REFRESH_EXPIRATION,
   TYPEORM_SYNCHRONIZE,
   TYPEORM_LOGGING,
+  MAX_TOTAL_LOGS_SIZE,
 } = process.env;
 
 const DEFAULT_PORT = 4000;
@@ -33,6 +34,7 @@ const DEFAULT_JWT_EXP = "15m";
 const DEFAULT_JWT_REFRESH_EXP = "30d";
 const DEFAULT_ORM_SYNC = false;
 const DEFAULT_ORM_LOGGING = true;
+const DEFAULT_MAX_TOTAL_LOGS_SIZE = "1G"; // 1 GB before old log files are deleted
 
 // If no JWT_SECRET is specified, the random secret will expire all JWTs if and
 // when the server restarts. That's probably *not* what you want, so you should
@@ -52,6 +54,7 @@ export default class Config {
   static readonly jwtRefreshExp = JWT_REFRESH_EXPIRATION ?? DEFAULT_JWT_REFRESH_EXP;
   static readonly ormSync = parseBool(TYPEORM_SYNCHRONIZE) ?? DEFAULT_ORM_SYNC;
   static readonly ormLogging = parseBool(TYPEORM_LOGGING) ?? DEFAULT_ORM_LOGGING;
+  static readonly logsMaxSize = MAX_TOTAL_LOGS_SIZE ?? DEFAULT_MAX_TOTAL_LOGS_SIZE;
 
   // NB: This is currently not used; tests are run in NodeEnv.DEV right now.
   static get isTest(): boolean {

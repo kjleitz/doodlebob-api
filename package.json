@@ -25,7 +25,7 @@
     "docker:migration:generate": "docker compose run --rm api pnpm run migration:generate",
     "docker:seed:run": "docker compose run --rm api pnpm run seed:run",
     "docker:dev": "docker compose --file docker-compose.yml --file docker-compose.development.yml up --build --remove-orphans",
-    "docker:dev:down": "docker compose --file docker-compose.yml --file docker-compose.development.yml down --remove-orphans",
+    "docker:dev:down": "docker compose --file docker-compose.yml --file docker-compose.development.yml down --remove-orphans --volumes",
     "docker:staging": "docker compose --file docker-compose.yml --file docker-compose.staging.yml up --build --remove-orphans",
     "docker:prod": "docker compose --file docker-compose.yml --file docker-compose.production.yml up --build --remove-orphans",
     "docker:prune": "docker image prune --force",
@@ -52,6 +52,7 @@
     "morgan": "^1.10.0",
     "pg": "^8.10.0",
     "reflect-metadata": "^0.1.13",
+    "rotating-file-stream": "^3.1.0",
     "ts-japi": "^1.8.0",
     "typeorm": "^0.3.15"
   },

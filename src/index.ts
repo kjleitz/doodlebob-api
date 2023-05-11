@@ -1,13 +1,15 @@
 import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
-import cookieParser from "cookie-parser";
 import helmet from "helmet";
-import appDataSource from "./orm/config/appDataSource";
+import morgan from "morgan";
 import Config from "./Config";
+import createRotatingLogStream from "./lib/logging/createRotatingLogStream";
+import appDataSource from "./orm/config/appDataSource";
 import errorHandler from "./server/middleware/handlers/errorHandler";
-import router from "./server/router";
 import setJwtUserClaims from "./server/middleware/prep/setJwtUserClaims";
+import router from "./server/router";
 
 // Init
 export const app = express();
@@ -22,6 +24,11 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(setJwtUserClaims);
+
+// Logging
+const accessLogStream = createRotatingLogStream(`doodlebob-access-${Config.env}.log`);
+app.use(morgan("combined", { stream: accessLogStream }));
+if (Config.isDev) app.use(morgan("dev")); // also print nicely colored logs to stdout
 
 // Routes
 app.use("/", router);

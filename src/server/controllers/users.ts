@@ -24,7 +24,7 @@ import { validateUserUpdateData } from "../../lib/validators/validateUserUpdateD
 const users = new Controller();
 const userRepository = appDataSource.getRepository(User);
 
-users.on(Verb.GET, "/", [authGate], () => {
+users.on(Verb.GET, "/", [authGate, adminGate], () => {
   return userRepository.find();
 });
 

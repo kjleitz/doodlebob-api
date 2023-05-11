@@ -66,8 +66,12 @@ describe("Users controller", () => {
       return agent(app).get("/users").send().expect(HttpStatus.UNAUTHORIZED);
     });
 
+    it("requires admin", () => {
+      return signIn(MY_USER).then((authed) => authed.get("/users").send().expect(HttpStatus.FORBIDDEN));
+    });
+
     it("returns a list of users", () => {
-      return signIn()
+      return signIn(ADMIN_USER)
         .then((authed) => authed.get("/users").send())
         .then((response) => {
           expect(response.status).to.equal(HttpStatus.OK);
