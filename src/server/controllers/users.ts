@@ -25,6 +25,7 @@ const users = new Controller();
 const userRepository = appDataSource.getRepository(User);
 
 users.on(Verb.GET, "/", [authGate, adminGate], () => {
+  // TODO: pagination
   return userRepository.find();
 });
 
