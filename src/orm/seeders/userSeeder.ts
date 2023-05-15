@@ -1,7 +1,7 @@
 import Role from "../../lib/auth/Role";
 import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
 import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreateAttributes";
-import Seeder from "../Seeder";
+import Seeder from "./Seeder";
 import User from "../entities/User";
 
 export const USER_SEEDS: UserAdminCreateAttributes[] = [

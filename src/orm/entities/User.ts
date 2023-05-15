@@ -1,9 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from "typeorm";
 import Role from "../../lib/auth/Role";
+import Note from "./Note";
 
 @Entity()
-// @Index(["name"], {unique: true}, "WHERE (key is NOT IN(conditional_col_b));")
-// @Index(["email"], { unique: true, where: "email != ''" })
 export default class User {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
@@ -20,6 +19,9 @@ export default class User {
 
   @Column({ default: "" })
   passwordHash!: string;
+
+  @OneToMany(() => Note, (note) => note.user)
+  notes!: Note[];
 
   @Column()
   @CreateDateColumn()

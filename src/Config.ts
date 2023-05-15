@@ -56,7 +56,6 @@ export default class Config {
   static readonly ormLogging = parseBool(TYPEORM_LOGGING) ?? DEFAULT_ORM_LOGGING;
   static readonly logsMaxSize = MAX_TOTAL_LOGS_SIZE ?? DEFAULT_MAX_TOTAL_LOGS_SIZE;
 
-  // NB: This is currently not used; tests are run in NodeEnv.DEV right now.
   static get isTest(): boolean {
     return this.env === NodeEnv.TEST;
   }

@@ -6,9 +6,9 @@ import LoginSerializer from "../../lib/serializers/LoginSerializer";
 import HttpStatus from "../../lib/errors/HttpStatus";
 import appDataSource from "../../orm/config/appDataSource";
 import { ACCESS_TOKEN_HEADER } from "../../constants";
-import { authHeaderForAccessToken, wait } from "../../lib/utils/tests";
-import truncateDatabase from "../../orm/truncateDatabase";
-import runSeeder from "../../orm/runSeeder";
+import { authHeaderForAccessToken, wait } from "../../testing/utils";
+import truncateDatabase from "../../orm/utils/truncateDatabase";
+import runSeeder from "../../orm/utils/runSeeder";
 import userSeeder from "../../orm/seeders/userSeeder";
 
 describe("Auth controller", () => {

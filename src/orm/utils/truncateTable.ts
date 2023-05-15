@@ -1,5 +1,5 @@
 import { EntityMetadata } from "typeorm";
-import Config from "../Config";
+import Config from "../../Config";
 import initDataSource from "./initDataSource";
 
 export default function truncateTable(entityMetadata: EntityMetadata): Promise<void> {

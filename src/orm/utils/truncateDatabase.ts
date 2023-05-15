@@ -1,4 +1,4 @@
-import Config from "../Config";
+import Config from "../../Config";
 import initDataSource from "./initDataSource";
 
 export default function truncateDatabase(): Promise<any[]> {

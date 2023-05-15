@@ -6,7 +6,7 @@ import { toSentence } from "../utils/strings";
 import { exists, isNullish } from "../utils/checks";
 
 export const validateUserUpdateData = (attrs: UserAdminUpdateAttributes): void => {
-  if (!attrs) throw new InvalidInputError("attributes", "No attributes given for create.");
+  if (!attrs) throw new InvalidInputError("attributes", "No attributes given for update.");
 
   const { email: _email, oldPassword, newPassword, role, username } = attrs;
 

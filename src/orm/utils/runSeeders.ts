@@ -1,5 +1,5 @@
-import Config from "../Config";
-import Seeder from "./Seeder";
+import Config from "../../Config";
+import Seeder from "../seeders/Seeder";
 import initDataSource from "./initDataSource";
 
 export default function runSeeders<R>(seeders: Seeder<R>[]): Promise<R[]> {
