@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from "typeorm";
 import Role from "../../lib/auth/Role";
 import Note from "./Note";
+import Label from "./Label";
 
 @Entity()
 export default class User {
@@ -22,6 +23,9 @@ export default class User {
 
   @OneToMany(() => Note, (note) => note.user)
   notes!: Note[];
+
+  @OneToMany(() => Label, (label) => label.user)
+  labels!: Label[];
 
   @Column()
   @CreateDateColumn()

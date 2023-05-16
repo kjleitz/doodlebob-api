@@ -1,19 +1,31 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  ManyToMany,
+} from "typeorm";
 import User from "./User";
+import Label from "./Label";
 
 @Entity()
 export default class Note {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @ManyToOne(() => User, (user) => user.notes)
-  user!: User;
-
   @Column({ type: "text", default: "" })
   title!: string;
 
   @Column({ type: "text", default: "" })
   body!: string;
+
+  @ManyToOne(() => User, (user) => user.notes)
+  user!: User;
+
+  @ManyToMany(() => Label, (label) => label.notes)
+  labels!: Label[];
 
   @Column()
   @CreateDateColumn()

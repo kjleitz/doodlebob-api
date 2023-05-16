@@ -7,12 +7,12 @@ import Resource from "ts-japi/lib/models/resource.model";
 import HttpStatus from "../../lib/errors/HttpStatus";
 import NoteCreateAttributes from "../../lib/permitters/notes/NoteCreateAttributes";
 import { validateNoteCreateData } from "../../lib/validators/validateNoteCreateData";
-import deserializeNoteCreate from "../../lib/deserializers/note/deserializeNoteCreate";
+import deserializeNoteCreate from "../../lib/deserializers/notes/deserializeNoteCreate";
 import buildNote from "../../lib/builders/notes/buildNote";
 import UnauthorizedError from "../../lib/errors/http/UnauthorizedError";
 import NoteUpdateAttributes from "../../lib/permitters/notes/NoteUpdateAttributes";
 import { validateNoteUpdateData } from "../../lib/validators/validateNoteUpdateData";
-import deserializeNoteUpdate from "../../lib/deserializers/note/deserializeNoteUpdate";
+import deserializeNoteUpdate from "../../lib/deserializers/notes/deserializeNoteUpdate";
 import editNote from "../../lib/builders/notes/editNote";
 import NotFoundError from "../../lib/errors/http/NotFoundError";
 

@@ -1,8 +1,9 @@
+import labelSeeder from "../orm/seeders/labelSeeder";
 import noteSeeder from "../orm/seeders/noteSeeder";
 import userSeeder from "../orm/seeders/userSeeder";
 import seedDatabase from "../orm/utils/seedDatabase";
 
-export const SEEDERS = [userSeeder, noteSeeder];
+export const SEEDERS = [userSeeder, noteSeeder, labelSeeder];
 
 if (require.main === module) {
   seedDatabase(SEEDERS)
