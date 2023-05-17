@@ -1,16 +1,14 @@
 import appDataSource from "../../../orm/config/appDataSource";
 import Note from "../../../orm/entities/Note";
-import NoteUpdateAttributes from "../../permitters/notes/NoteUpdateAttributes";
-import permitNoteUpdate from "../../permitters/notes/permitNoteUpdate";
+import { NoteUpdateAttributes } from "../../../server/schemata/jsonApiNotes";
 
 type NoteUpdateSyncAttributes = NoteUpdateAttributes;
 
 // The async version just uses this, so you can use this if you'd like; it's
 // async in the default export basically just to match the user builder/editor.
 export function editNoteSync(note: Note, attrs: NoteUpdateSyncAttributes): Note {
-  const noteAttrs = permitNoteUpdate(attrs);
   // TODO: test if this mutates the note object (I think it does?)
-  return appDataSource.getRepository(Note).merge(note, noteAttrs);
+  return appDataSource.getRepository(Note).merge(note, attrs);
 }
 
 // This should return a Note with ONLY the attributes specified set. It mutates

@@ -2,7 +2,7 @@ import "mocha";
 import { expect } from "chai";
 import { validateNoteCreateData } from "./validateNoteCreateData";
 import InvalidInputError from "../errors/app/InvalidInputError";
-import NoteCreateAttributes from "../permitters/notes/NoteCreateAttributes";
+import { NoteCreateAttributes } from "../../server/schemata/jsonApiNotes";
 
 const VALID_ATTRIBUTES: NoteCreateAttributes = {
   title: "foobar",

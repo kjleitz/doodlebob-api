@@ -1,11 +1,11 @@
 import Role from "../../lib/auth/Role";
 import buildNote from "../../lib/builders/notes/buildNote";
-import NoteCreateAttributes from "../../lib/permitters/notes/NoteCreateAttributes";
 import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreateAttributes";
 import Seeder from "./Seeder";
 import User from "../entities/User";
 import Note from "../entities/Note";
 import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
+import { NoteCreateAttributes } from "../../server/schemata/jsonApiNotes";
 
 export const USER_NOTE_SEEDS: (UserAdminCreateAttributes & { notes: NoteCreateAttributes[] })[] = [
   {

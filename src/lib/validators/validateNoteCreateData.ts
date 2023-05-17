@@ -1,4 +1,4 @@
-import NoteCreateAttributes from "../permitters/notes/NoteCreateAttributes";
+import { NoteCreateAttributes } from "../../server/schemata/jsonApiNotes";
 import InvalidInputError from "../errors/app/InvalidInputError";
 import { exists } from "../utils/checks";
 

@@ -1,4 +1,4 @@
-import { SuperAgentTest, agent } from "supertest";
+import { Response, SuperAgentTest, agent } from "supertest";
 import LoginSerializer from "../lib/serializers/LoginSerializer";
 import { app } from "..";
 import HttpStatus from "../lib/errors/HttpStatus";
@@ -19,7 +19,6 @@ export function wait<R>(milliseconds: number, resolveWith?: R): Promise<R | void
   });
 }
 
-// export const signIn = (username: string, password = "p4ssw0rd"): Promise<{ authed: SuperAgentTest; user: User }> => {
 export const signIn = (username: string, password = "p4ssw0rd"): Promise<{ authed: SuperAgentTest; id: string }> => {
   return LoginSerializer.serialize({ username, password })
     .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
@@ -29,8 +28,32 @@ export const signIn = (username: string, password = "p4ssw0rd"): Promise<{ authe
       const cookie = response.get("Set-Cookie");
       const authed = agent(app);
       authed.set("Cookie", cookie).set("Authorization", authHeaderForAccessToken(accessToken));
-      // const user = deserializeToUser(response.body)
       const id = response.body.data.id as string;
       return { authed, id };
     });
+};
+
+// Insert in promise chain after making a request to log any errors if they occurred
+export const printResponseErrorsMiddleman = (response: Response): Response => {
+  const { errors } = response.body;
+  const originalDetail = errors?.[0]?.meta?.original?.errors?.[0]?.detail as string | undefined;
+  const originalDetailProjectOnly = originalDetail
+    ?.split("\n")
+    .filter((line: string) => !line.includes("node_modules"))
+    .join("\n");
+  if (errors) console.error("\nHTTP error:\n", JSON.stringify(errors, null, 2));
+  if (originalDetail) console.error("\nOriginal error:\n", originalDetail);
+  if (originalDetailProjectOnly)
+    console.error("\nOriginal error (filtered for project files):\n", originalDetailProjectOnly);
+  return response;
+};
+
+export const printMiddleman = <T>(resolvedValue: T): T => {
+  console.log(resolvedValue);
+  return resolvedValue;
+};
+
+export const printJsonMiddleman = <T>(resolvedValue: T): T => {
+  console.log(JSON.stringify(resolvedValue, null, 2));
+  return resolvedValue;
 };

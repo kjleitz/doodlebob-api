@@ -1,70 +1,89 @@
+import { z } from "zod";
+import buildNote from "../../lib/builders/notes/buildNote";
+import editNote from "../../lib/builders/notes/editNote";
+import HttpStatus from "../../lib/errors/HttpStatus";
+import NotFoundError from "../../lib/errors/http/NotFoundError";
+import UnprocessableEntityError from "../../lib/errors/http/UnprocessableEntityError";
+import NoteSerializer, { NoteLabelsRelator } from "../../lib/serializers/NoteSerializer";
+import { toParagraph } from "../../lib/utils/strings";
 import appDataSource from "../../orm/config/appDataSource";
+import Label from "../../orm/entities/Label";
 import Note from "../../orm/entities/Note";
 import Controller, { Verb } from "../Controller";
 import authGate from "../middleware/gates/authGate";
-import UnprocessableEntityError from "../../lib/errors/http/UnprocessableEntityError";
-import Resource from "ts-japi/lib/models/resource.model";
-import HttpStatus from "../../lib/errors/HttpStatus";
-import NoteCreateAttributes from "../../lib/permitters/notes/NoteCreateAttributes";
-import { validateNoteCreateData } from "../../lib/validators/validateNoteCreateData";
-import deserializeNoteCreate from "../../lib/deserializers/notes/deserializeNoteCreate";
-import buildNote from "../../lib/builders/notes/buildNote";
-import UnauthorizedError from "../../lib/errors/http/UnauthorizedError";
-import NoteUpdateAttributes from "../../lib/permitters/notes/NoteUpdateAttributes";
-import { validateNoteUpdateData } from "../../lib/validators/validateNoteUpdateData";
-import deserializeNoteUpdate from "../../lib/deserializers/notes/deserializeNoteUpdate";
-import editNote from "../../lib/builders/notes/editNote";
-import NotFoundError from "../../lib/errors/http/NotFoundError";
+import {
+  NoteCreateResourceDocument,
+  NoteLabelResourceLinkage,
+  NoteUpdateResourceDocument,
+} from "../schemata/jsonApiNotes";
 
 const notes = new Controller();
 const noteRepository = appDataSource.getRepository(Note);
 
+const parseBodyAsSchema = <I>(requestBody: any, schema: z.ZodType<I>): I => {
+  const parsed = schema.safeParse(requestBody);
+  if (!parsed.success)
+    throw new UnprocessableEntityError(toParagraph(parsed.error.issues.map((issue) => issue.message)), parsed.error);
+
+  return parsed.data;
+};
+
+type LabelSetter = Pick<Label, "id">;
+
+const labelSettersFromLinkages = (linkages?: NoteLabelResourceLinkage[]): LabelSetter[] | undefined => {
+  return linkages?.map(({ id }) => ({ id: typeof id === "number" ? id : parseInt(id, 10) })).filter(({ id }) => id);
+};
+
 notes.on(Verb.GET, "/", [authGate], (req) => {
-  const userId = req.jwtUserClaims?.id;
+  const userId = req.jwtUserClaims!.id;
   // TODO: pagination
   return noteRepository.find({ where: { user: { id: userId } } });
 });
 
 notes.on(Verb.GET, "/:id", [authGate], (req) => {
   const { id } = req.params;
-  const userId = req.jwtUserClaims?.id;
-  if (!userId) throw new UnauthorizedError();
-
-  return noteRepository.findOneOrFail({ where: { id, user: { id: userId } } });
+  const userId = req.jwtUserClaims!.id;
+  return noteRepository
+    .findOneOrFail({ where: { id, user: { id: userId } }, relations: { labels: true } })
+    .then((note) => NoteSerializer.serialize(note, { relators: [NoteLabelsRelator] }));
 });
 
 notes.on(Verb.POST, "/", [authGate], (req, res) => {
-  const data = req.body.data as Resource<NoteCreateAttributes>;
-  if (!data || !data.attributes) throw new UnprocessableEntityError();
-
   const userId = req.jwtUserClaims!.id;
-  if (!userId) throw new UnauthorizedError();
+  const document = parseBodyAsSchema(req.body, NoteCreateResourceDocument);
+  const { attributes, relationships } = document.data;
+  const labelsToSet = labelSettersFromLinkages(relationships?.labels?.data);
 
-  validateNoteCreateData(data.attributes);
-
-  const attrs = deserializeNoteCreate(data);
-
-  return buildNote(attrs, userId)
-    .then((note) => noteRepository.save(note))
+  return buildNote(attributes, userId)
+    .then((note) => {
+      if (labelsToSet) note.labels = labelsToSet as Label[];
+      return noteRepository.save(note);
+    })
     .then((note) => {
       res.status(HttpStatus.CREATED);
       return note;
-    });
+    })
+    .then((note) => NoteSerializer.serialize(note, { relators: [NoteLabelsRelator] }));
 });
 
 notes.on([Verb.PATCH, Verb.PUT], "/:id", [authGate], (req) => {
   const { id } = req.params;
-  const data = req.body.data as Resource<NoteUpdateAttributes>;
-  if (!data || !data.attributes) throw new UnprocessableEntityError();
-
-  validateNoteUpdateData(data.attributes);
-
-  const attrs = deserializeNoteUpdate(data);
+  const userId = req.jwtUserClaims!.id;
+  const document = parseBodyAsSchema(req.body, NoteUpdateResourceDocument);
+  const { attributes, relationships } = document.data;
+  const labelsToSet = labelSettersFromLinkages(relationships?.labels?.data);
 
   return noteRepository
-    .findOneByOrFail({ id })
-    .then((note) => editNote(note, attrs))
-    .then((edits) => noteRepository.save(edits));
+    .findOneOrFail({ where: { id, user: { id: userId } }, relations: { labels: true } })
+    .then((note) => {
+      return note;
+    })
+    .then((note) => editNote(note, attributes))
+    .then((edits) => {
+      if (labelsToSet) edits.labels = labelsToSet as Label[];
+      return noteRepository.save(edits);
+    })
+    .then((note) => NoteSerializer.serialize(note, { relators: [NoteLabelsRelator] }));
 });
 
 notes.on(Verb.DELETE, "/:id", [authGate], (req) => {
