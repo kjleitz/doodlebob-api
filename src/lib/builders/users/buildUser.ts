@@ -1,8 +1,7 @@
 import appDataSource from "../../../orm/config/appDataSource";
 import User from "../../../orm/entities/User";
+import { UserCreateAttributes } from "../../../server/schemata/jsonApiUsers";
 import { setPassword } from "../../auth/passwordUtils";
-import UserCreateAttributes from "../../permitters/users/UserCreateAttributes";
-import permitUserCreate from "../../permitters/users/permitUserCreate";
 import { exists } from "../../utils/checks";
 import { omit } from "../../utils/objects";
 
@@ -11,8 +10,7 @@ type UserCreateSyncAttributes = Omit<UserCreateAttributes, "password"> & { passw
 // Hashing passwords should be done asynchronously, so this can only be used if
 // a password is not included in the data. An included password will be ignored.
 export function buildUserSync(attrs: UserCreateSyncAttributes): User {
-  const userAttrs = permitUserCreate(attrs);
-  return appDataSource.getRepository(User).create(userAttrs);
+  return appDataSource.getRepository(User).create(attrs);
 }
 
 export default function buildUser(attrs: UserCreateAttributes): Promise<User> {

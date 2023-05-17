@@ -1,7 +1,6 @@
-import LabelCreateAttributes from "../permitters/labels/LabelCreateAttributes";
 import InvalidInputError from "../errors/app/InvalidInputError";
 
-export const validateLabelCreateData = (attrs: LabelCreateAttributes): void => {
+export const validateLabelCreateData = (attrs: Record<string, any>): void => {
   if (!attrs) throw new InvalidInputError("attributes", "No attributes given for create.");
 
   const { name } = attrs;

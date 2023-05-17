@@ -12,8 +12,8 @@ import User from "../../orm/entities/User";
 import noteSeeder, { USER_NOTE_SEEDS } from "../../orm/seeders/noteSeeder";
 import runSeeder from "../../orm/utils/runSeeder";
 import truncateDatabase from "../../orm/utils/truncateDatabase";
+import { signIn } from "../../testing/utils";
 import { NoteResourceDocument } from "../schemata/jsonApiNotes";
-import { printResponseErrorsMiddleman, signIn } from "../../testing/utils";
 
 const MY_USER_SEED = USER_NOTE_SEEDS.find(
   (seed) => (!seed.role || seed.role === Role.PEASANT) && seed.username && seed.notes.length,
@@ -163,7 +163,6 @@ describe("Notes controller", () => {
       return noteRepository.count().then((originalCount) =>
         NoteSerializer.serialize(noteData)
           .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.post("/notes").send(serialized)))
-          .then(printResponseErrorsMiddleman)
           .then((response) => {
             expect(response.status).to.equal(HttpStatus.CREATED);
             expect(response.body.data.attributes.title).to.equal(noteData.title);

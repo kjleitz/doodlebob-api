@@ -2,6 +2,7 @@ import { exists } from "./checks";
 
 export const VALID_USERNAME_CHARACTERS = ["A-Z", "a-z", "0-9", "+", ".", "@", "_", "-"];
 export const MATCH_INVALID_USERNAME_CHAR = /[^A-Za-z0-9+.@_-]/;
+export const MATCH_VALID_USERNAME = /^[A-Za-z0-9+.@_-]+$/;
 export const MIN_PASSWORD_LENGTH = 6;
 
 export const isLength = (value: string | any[], length: number): boolean => exists(value) && value.length === length;

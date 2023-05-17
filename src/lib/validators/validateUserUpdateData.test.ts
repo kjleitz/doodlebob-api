@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { validateUserUpdateData } from "./validateUserUpdateData";
 import InvalidInputError from "../errors/app/InvalidInputError";
 import Role from "../auth/Role";
-import UserAdminUpdateAttributes from "../permitters/users/UserAdminUpdateAttributes";
+import { UserAdminUpdateAttributes } from "../../server/schemata/jsonApiUsers";
 
 const VALID_ATTRIBUTES: UserAdminUpdateAttributes = {
   // usernames can be anything, including emails

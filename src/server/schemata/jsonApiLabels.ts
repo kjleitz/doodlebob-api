@@ -69,3 +69,17 @@ export const LabelCreateResourceDocument = JsonApiResourceDocument.extend({
 export const LabelUpdateResourceDocument = JsonApiResourceDocument.extend({
   data: LabelUpdateResource,
 });
+
+export type LabelAttributes = z.infer<typeof LabelAttributes>;
+export type LabelCreateAttributes = z.infer<typeof LabelCreateAttributes>;
+export type LabelUpdateAttributes = z.infer<typeof LabelUpdateAttributes>;
+export type LabelUserResourceLinkage = z.infer<typeof LabelUserResourceLinkage>;
+export type LabelNoteResourceLinkage = z.infer<typeof LabelNoteResourceLinkage>;
+export type LabelRelationships = z.infer<typeof LabelRelationships>;
+export type LabelResource = z.infer<typeof LabelResource>;
+export type LabelCreateResource = z.infer<typeof LabelCreateResource>;
+export type LabelUpdateResource = z.infer<typeof LabelUpdateResource>;
+export type LabelResourceDocument = z.infer<typeof LabelResourceDocument>;
+export type LabelCollectionDocument = z.infer<typeof LabelCollectionDocument>;
+export type LabelCreateResourceDocument = z.infer<typeof LabelCreateResourceDocument>;
+export type LabelUpdateResourceDocument = z.infer<typeof LabelUpdateResourceDocument>;

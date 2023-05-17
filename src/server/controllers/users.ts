@@ -1,25 +1,22 @@
+import Role from "../../lib/auth/Role";
+import buildUser from "../../lib/builders/users/buildUser";
+import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
+import editUser from "../../lib/builders/users/editUser";
+import editUserAdmin from "../../lib/builders/users/editUserAdmin";
+import HttpStatus from "../../lib/errors/HttpStatus";
 import appDataSource from "../../orm/config/appDataSource";
 import User from "../../orm/entities/User";
 import Controller, { Verb } from "../Controller";
 import adminGate from "../middleware/gates/adminGate";
 import authGate from "../middleware/gates/authGate";
 import ownGate from "../middleware/gates/ownGate";
-import deserializeUserAdminCreate from "../../lib/deserializers/users/deserializeUserAdminCreate";
-import buildUser from "../../lib/builders/users/buildUser";
-import deserializeUserUpdate from "../../lib/deserializers/users/deserializeUserUpdate";
-import editUser from "../../lib/builders/users/editUser";
-import Role, { ROLES } from "../../lib/auth/Role";
-import editUserAdmin from "../../lib/builders/users/editUserAdmin";
-import deserializeUserAdminUpdate from "../../lib/deserializers/users/deserializeUserAdminUpdate";
-import deserializeUserCreate from "../../lib/deserializers/users/deserializeUserCreate";
-import UnprocessableEntityError from "../../lib/errors/http/UnprocessableEntityError";
-import Resource from "ts-japi/lib/models/resource.model";
-import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreateAttributes";
-import UserAdminUpdateAttributes from "../../lib/permitters/users/UserAdminUpdateAttributes";
-import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
-import HttpStatus from "../../lib/errors/HttpStatus";
-import { validateUserCreateData } from "../../lib/validators/validateUserCreateData";
-import { validateUserUpdateData } from "../../lib/validators/validateUserUpdateData";
+import parseBodyAsSchema from "../middleware/helpers/parseBodyAsSchema";
+import {
+  UserAdminCreateResourceDocument,
+  UserAdminUpdateResourceDocument,
+  UserCreateResourceDocument,
+  UserUpdateResourceDocument,
+} from "../schemata/jsonApiUsers";
 
 const users = new Controller();
 const userRepository = appDataSource.getRepository(User);
@@ -35,18 +32,20 @@ users.on(Verb.GET, "/:id", [authGate, ownGate], (req) => {
 });
 
 users.on(Verb.POST, "/", [authGate, adminGate], (req, res) => {
-  const data = req.body.data as Resource<UserAdminCreateAttributes>;
-  if (!data || !data.attributes) throw new UnprocessableEntityError();
-
-  validateUserCreateData(data.attributes);
+  let builder: Promise<User>;
 
   // This action is admin-gated, so this is unnecessary. However, we'll double-
   // check here, just to be safe, in case that gate is removed in the future
   // without a corresponding change to the logic.
-  const asAdmin = req.jwtUserClaims?.role === Role.ADMIN;
-  const attrs = asAdmin ? deserializeUserAdminCreate(data) : deserializeUserCreate(data);
+  if (req.jwtUserClaims?.role === Role.ADMIN) {
+    const document = parseBodyAsSchema(req.body, UserAdminCreateResourceDocument);
+    builder = buildUserAdmin(document.data.attributes);
+  } else {
+    const document = parseBodyAsSchema(req.body, UserCreateResourceDocument);
+    builder = buildUser(document.data.attributes);
+  }
 
-  return (asAdmin ? buildUserAdmin(attrs) : buildUser(attrs))
+  return builder
     .then((user) => userRepository.save(user))
     .then((user) => {
       res.status(HttpStatus.CREATED);
@@ -56,17 +55,17 @@ users.on(Verb.POST, "/", [authGate, adminGate], (req, res) => {
 
 users.on([Verb.PATCH, Verb.PUT], "/:id", [authGate, ownGate], (req) => {
   const { id } = req.params;
-  const data = req.body.data as Resource<UserAdminUpdateAttributes>;
-  if (!data || !data.attributes) throw new UnprocessableEntityError();
-
-  validateUserUpdateData(data.attributes);
-
-  const asAdmin = req.jwtUserClaims?.role === Role.ADMIN;
-  const attrs = asAdmin ? deserializeUserAdminUpdate(data) : deserializeUserUpdate(data);
-
   return userRepository
     .findOneByOrFail({ id })
-    .then((user) => (asAdmin ? editUserAdmin(user, attrs) : editUser(user, attrs)))
+    .then((user) => {
+      if (req.jwtUserClaims?.role === Role.ADMIN) {
+        const document = parseBodyAsSchema(req.body, UserAdminUpdateResourceDocument);
+        return editUserAdmin(user, document.data.attributes);
+      }
+
+      const document = parseBodyAsSchema(req.body, UserUpdateResourceDocument);
+      return editUser(user, document.data.attributes);
+    })
     .then((edits) => userRepository.save(edits));
 });
 

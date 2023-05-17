@@ -1,4 +1,4 @@
-import LabelUpdateAttributes from "../permitters/labels/LabelUpdateAttributes";
+import { LabelUpdateAttributes } from "../../server/schemata/jsonApiLabels";
 import InvalidInputError from "../errors/app/InvalidInputError";
 import { exists } from "../utils/checks";
 

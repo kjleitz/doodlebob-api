@@ -1,8 +1,8 @@
 import Role from "../../lib/auth/Role";
 import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
-import UserAdminCreateAttributes from "../../lib/permitters/users/UserAdminCreateAttributes";
-import Seeder from "./Seeder";
+import { UserAdminCreateAttributes } from "../../server/schemata/jsonApiUsers";
 import User from "../entities/User";
+import Seeder from "./Seeder";
 
 export const USER_SEEDS: UserAdminCreateAttributes[] = [
   {

@@ -1,11 +1,10 @@
-import UserAdminCreateAttributes from "../permitters/users/UserAdminCreateAttributes";
 import InvalidInputError from "../errors/app/InvalidInputError";
 import { MIN_PASSWORD_LENGTH, VALID_USERNAME_CHARACTERS, isIn, validPassword, validUsername } from "../utils/checkers";
 import { ROLES } from "../auth/Role";
 import { toSentence } from "../utils/strings";
 import { exists } from "../utils/checks";
 
-export const validateUserCreateData = (attrs: UserAdminCreateAttributes): void => {
+export const validateUserCreateData = (attrs: Record<string, any>): void => {
   if (!attrs) throw new InvalidInputError("attributes", "No attributes given for create.");
 
   const { email: _email, password, role, username } = attrs;

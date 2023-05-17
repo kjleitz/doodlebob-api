@@ -1,9 +1,9 @@
-import UserAdminUpdateAttributes from "../permitters/users/UserAdminUpdateAttributes";
 import InvalidInputError from "../errors/app/InvalidInputError";
 import { MIN_PASSWORD_LENGTH, VALID_USERNAME_CHARACTERS, isIn, validPassword, validUsername } from "../utils/checkers";
 import { ROLES } from "../auth/Role";
 import { toSentence } from "../utils/strings";
 import { exists, isNullish } from "../utils/checks";
+import { UserAdminUpdateAttributes } from "../../server/schemata/jsonApiUsers";
 
 export const validateUserUpdateData = (attrs: UserAdminUpdateAttributes): void => {
   if (!attrs) throw new InvalidInputError("attributes", "No attributes given for update.");

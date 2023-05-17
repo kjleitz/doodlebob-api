@@ -1,29 +1,26 @@
+import decodeRefreshClaimsFromJwt from "../../lib/auth/decodeRefreshClaimsFromJwt";
+import jwtTokensForUser from "../../lib/auth/jwtTokensForUser";
 import { comparePassword } from "../../lib/auth/passwordUtils";
+import buildUser from "../../lib/builders/users/buildUser";
+import HttpStatus from "../../lib/errors/HttpStatus";
+import UnauthorizedError from "../../lib/errors/http/UnauthorizedError";
 import appDataSource from "../../orm/config/appDataSource";
 import User from "../../orm/entities/User";
 import Controller, { Verb } from "../Controller";
-import deserializeUserCreate from "../../lib/deserializers/users/deserializeUserCreate";
-import buildUser from "../../lib/builders/users/buildUser";
-import deserializeLogin from "../../lib/deserializers/auth/deserializeLogin";
-import UnauthorizedError from "../../lib/errors/http/UnauthorizedError";
-import decodeRefreshClaimsFromJwt from "../../lib/auth/decodeRefreshClaimsFromJwt";
-import jwtTokensForUser from "../../lib/auth/jwtTokensForUser";
-import setRefreshTokenOnResponse from "../middleware/helpers/setRefreshTokenOnResponse";
-import setAccessTokenOnResponse from "../middleware/helpers/setAccessTokenOnResponse";
-import getRefreshTokenFromRequest from "../middleware/helpers/getRefreshTokenFromRequest";
-import deleteTokensOnResponse from "../middleware/helpers/deleteTokensOnResponse";
-import HttpStatus from "../../lib/errors/HttpStatus";
 import authGate from "../middleware/gates/authGate";
-import { validateUserCreateData } from "../../lib/validators/validateUserCreateData";
-import UnprocessableEntityError from "../../lib/errors/http/UnprocessableEntityError";
-import UserCreateAttributes from "../../lib/permitters/users/UserCreateAttributes";
-import Resource from "ts-japi/lib/models/resource.model";
+import deleteTokensOnResponse from "../middleware/helpers/deleteTokensOnResponse";
+import getRefreshTokenFromRequest from "../middleware/helpers/getRefreshTokenFromRequest";
+import parseBodyAsSchema from "../middleware/helpers/parseBodyAsSchema";
+import setAccessTokenOnResponse from "../middleware/helpers/setAccessTokenOnResponse";
+import setRefreshTokenOnResponse from "../middleware/helpers/setRefreshTokenOnResponse";
+import { UserAuthResourceDocument, UserCreateResourceDocument } from "../schemata/jsonApiUsers";
 
 const auth = new Controller();
 const userRepository = appDataSource.getRepository(User);
 
 auth.on(Verb.POST, "/signIn", [], (req, res) => {
-  const { username, password } = deserializeLogin(req.body.data);
+  const document = parseBodyAsSchema(req.body, UserAuthResourceDocument);
+  const { username, password } = document.data.attributes;
   if (!username) throw new UnauthorizedError("Must provide a username.");
   if (!password) throw new UnauthorizedError("Must provide a password.");
 
@@ -43,14 +40,10 @@ auth.on(Verb.POST, "/signIn", [], (req, res) => {
 });
 
 auth.on(Verb.POST, "/signUp", [], (req, res) => {
-  const data = req.body.data as Resource<UserCreateAttributes>;
-  if (!data || !data.attributes) throw new UnprocessableEntityError();
+  const document = parseBodyAsSchema(req.body, UserCreateResourceDocument);
+  const { attributes } = document.data;
 
-  validateUserCreateData(data.attributes);
-
-  const attrs = deserializeUserCreate(data);
-
-  return buildUser(attrs)
+  return buildUser(attributes)
     .then((user) => userRepository.save(user))
     .then((user) => jwtTokensForUser(user))
     .then(([refreshToken, accessToken, user]) => {

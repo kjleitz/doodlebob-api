@@ -9,6 +9,8 @@ export const JsonApiResource = z.object({
   relationships: z.object({}).passthrough().optional(),
 });
 
+export const JsonApiResourceLinkage = JsonApiResource.pick({ type: true, id: true });
+
 export const JsonApiErrorBase = z.object({
   stack: z.string(),
   id: z.string().optional(),
@@ -52,3 +54,12 @@ export const JsonApiCollectionDocument = JsonApiVersionedDocument.extend({
 export const JsonApiErrorDocument = JsonApiVersionedDocument.extend({
   errors: z.array(JsonApiError),
 });
+
+export type JsonApiResource = z.infer<typeof JsonApiResource>;
+export type JsonApiResourceLinkage = z.infer<typeof JsonApiResourceLinkage>;
+export type JsonApiErrorBase = z.infer<typeof JsonApiErrorBase>;
+export type JsonApiError = z.infer<typeof JsonApiError>;
+export type JsonApiVersionedDocument = z.infer<typeof JsonApiVersionedDocument>;
+export type JsonApiResourceDocument = z.infer<typeof JsonApiResourceDocument>;
+export type JsonApiCollectionDocument = z.infer<typeof JsonApiCollectionDocument>;
+export type JsonApiErrorDocument = z.infer<typeof JsonApiErrorDocument>;

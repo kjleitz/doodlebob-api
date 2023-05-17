@@ -1,19 +1,19 @@
-import "mocha";
 import { expect } from "chai";
+import "mocha";
 import { randomUUID } from "node:crypto";
-import { SuperAgentTest, agent } from "supertest";
+import { agent } from "supertest";
 import { app } from "../..";
-import LoginSerializer from "../../lib/serializers/LoginSerializer";
-import DataSerializer from "../../lib/serializers/DataSerializer";
-import HttpStatus from "../../lib/errors/HttpStatus";
-import appDataSource from "../../orm/config/appDataSource";
-import { ACCESS_TOKEN_HEADER } from "../../constants";
-import { authHeaderForAccessToken, signIn } from "../../testing/utils";
-import User from "../../orm/entities/User";
 import Role from "../../lib/auth/Role";
-import truncateDatabase from "../../orm/utils/truncateDatabase";
+import HttpStatus from "../../lib/errors/HttpStatus";
+import LoginSerializer from "../../lib/serializers/LoginSerializer";
+import UserSerializer from "../../lib/serializers/UserSerializer";
+import UserUpdateSerializer from "../../lib/serializers/UserUpdateSerializer";
+import appDataSource from "../../orm/config/appDataSource";
+import User from "../../orm/entities/User";
 import userSeeder from "../../orm/seeders/userSeeder";
 import runSeeder from "../../orm/utils/runSeeder";
+import truncateDatabase from "../../orm/utils/truncateDatabase";
+import { signIn } from "../../testing/utils";
 
 const MY_USER = "skyler.white";
 const OTHER_USER = "marie.schrader";
@@ -106,7 +106,7 @@ describe("Users controller", () => {
         email: `the.poopsmith-${uuid}@homestarrunner.com`,
       };
 
-      return DataSerializer.serialize(userData).then((serialized) =>
+      return UserSerializer.serialize(userData).then((serialized) =>
         agent(app).post(`/users`).send(serialized).expect(HttpStatus.UNAUTHORIZED),
       );
     });
@@ -121,7 +121,7 @@ describe("Users controller", () => {
         email: `the.poopsmith-${uuid}@homestarrunner.com`,
       };
 
-      return DataSerializer.serialize(userData).then((serialized) =>
+      return UserSerializer.serialize(userData).then((serialized) =>
         signIn(MY_USER).then(({ authed }) => authed.post(`/users`).send(serialized).expect(HttpStatus.FORBIDDEN)),
       );
     });
@@ -137,7 +137,7 @@ describe("Users controller", () => {
       };
 
       return userRepository.count().then((originalCount) => {
-        return DataSerializer.serialize(userData).then((serialized) => {
+        return UserSerializer.serialize(userData).then((serialized) => {
           return signIn(ADMIN_USER)
             .then(({ authed }) => authed.post(`/users`).send(serialized))
             .then((response) => {
@@ -163,7 +163,7 @@ describe("Users controller", () => {
         email: `the.poopsmith-${uuid}@homestarrunner.com`,
       };
 
-      return DataSerializer.serialize(userData).then((serialized) => {
+      return UserSerializer.serialize(userData).then((serialized) => {
         return signIn(ADMIN_USER)
           .then(({ authed }) => authed.post(`/users`).send(serialized))
           .then((response) => {
@@ -182,7 +182,7 @@ describe("Users controller", () => {
         email: "the.poopsmith-${uuid}@homestarrunner.com",
       };
 
-      return DataSerializer.serialize(userData).then((serialized) => {
+      return UserSerializer.serialize(userData).then((serialized) => {
         return signIn(ADMIN_USER)
           .then(({ authed }) => authed.post(`/users`).send(serialized))
           .then((response) => {
@@ -203,7 +203,7 @@ describe("Users controller", () => {
         oldEmail = user.email;
         newEmail = randomUUID() + user.email;
 
-        return DataSerializer.serialize({ email: newEmail }).then((serialized) => {
+        return UserSerializer.serialize({ email: newEmail }).then((serialized) => {
           return agent(app)
             .patch(`/users/${user.id}`)
             .send(serialized)
@@ -223,7 +223,7 @@ describe("Users controller", () => {
         oldEmail = otherUser.email;
         newEmail = randomUUID() + otherUser.email;
 
-        return DataSerializer.serialize({ email: newEmail }).then((serialized) => {
+        return UserSerializer.serialize({ email: newEmail }).then((serialized) => {
           return signIn(MY_USER)
             .then(({ authed }) => authed.patch(`/users/${otherUser.id}`).send(serialized))
             .then((response) => {
@@ -242,7 +242,7 @@ describe("Users controller", () => {
         oldEmail = user.email;
         newEmail = randomUUID() + user.email;
 
-        return DataSerializer.serialize({ email: newEmail }).then((serialized) => {
+        return UserSerializer.serialize({ email: newEmail }).then((serialized) => {
           return signIn(MY_USER)
             .then(({ authed }) => authed.patch(`/users/${user.id}`).send(serialized))
             .then((response) => {
@@ -260,13 +260,13 @@ describe("Users controller", () => {
       const oldPassword = undefined;
       expect(oldPassword).not.to.equal(password);
 
-      return DataSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
+      return UserUpdateSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
         return (
           signIn(MY_USER)
             // Update to new password fails because old password is not supplied
             .then(({ authed, id }) => authed.patch(`/users/${id}`).send(serialized))
             .then((response) => {
-              expect(response.status).to.equal(HttpStatus.UNPROCESSABLE_ENTITY);
+              expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
             })
             // Sign-in with new password fails
             .then(() => LoginSerializer.serialize({ username: MY_USER, password: newPassword }))
@@ -291,7 +291,7 @@ describe("Users controller", () => {
       const oldPassword = "nopethisiswrong";
       expect(oldPassword).not.to.equal(password);
 
-      return DataSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
+      return UserUpdateSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
         return (
           signIn(MY_USER)
             // Update to new password fails because old password is wrong
@@ -322,7 +322,7 @@ describe("Users controller", () => {
       const oldPassword = "p4ssw0rd";
       expect(oldPassword).to.equal(password);
 
-      return DataSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
+      return UserUpdateSerializer.serialize({ newPassword, oldPassword }).then((serialized) => {
         return (
           signIn(MY_USER)
             // Update to new password succeeds
@@ -351,7 +351,7 @@ describe("Users controller", () => {
       return getUser(MY_USER).then((user) => {
         expect(user.role).to.equal(Role.PEASANT);
 
-        return DataSerializer.serialize({ role: Role.ADMIN }).then((serialized) => {
+        return UserSerializer.serialize({ role: Role.ADMIN }).then((serialized) => {
           return signIn(MY_USER)
             .then(({ authed }) => authed.patch(`/users/${user.id}`).send(serialized))
             .then((response) => {
@@ -367,7 +367,7 @@ describe("Users controller", () => {
       return getUser(MY_USER).then((user) => {
         expect(user.role).to.equal(Role.PEASANT);
 
-        return DataSerializer.serialize({ role: Role.ADMIN }).then((serialized) => {
+        return UserSerializer.serialize({ role: Role.ADMIN }).then((serialized) => {
           return signIn(ADMIN_USER)
             .then(({ authed }) => authed.patch(`/users/${user.id}`).send(serialized))
             .then((response) => {

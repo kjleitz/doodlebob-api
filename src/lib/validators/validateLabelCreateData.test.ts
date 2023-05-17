@@ -2,7 +2,7 @@ import "mocha";
 import { expect } from "chai";
 import { validateLabelCreateData } from "./validateLabelCreateData";
 import InvalidInputError from "../errors/app/InvalidInputError";
-import LabelCreateAttributes from "../permitters/labels/LabelCreateAttributes";
+import { LabelCreateAttributes } from "../../server/schemata/jsonApiLabels";
 
 const VALID_ATTRIBUTES: LabelCreateAttributes = {
   name: "Foobar",
@@ -14,7 +14,7 @@ const attrsPlus = (additionalAttributes: Record<string, any>): Record<string, an
 });
 
 const attrsMinus = (...subtractionalAttributes: (keyof LabelCreateAttributes)[]): Record<string, any> => {
-  const newAttrs = { ...VALID_ATTRIBUTES };
+  const newAttrs: Partial<LabelCreateAttributes> = { ...VALID_ATTRIBUTES };
   subtractionalAttributes.forEach((attr) => delete newAttrs[attr]);
   return newAttrs;
 };

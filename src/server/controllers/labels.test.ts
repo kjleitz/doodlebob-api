@@ -1,18 +1,18 @@
+import { expect } from "chai";
 import "mocha";
-import appDataSource from "../../orm/config/appDataSource";
-import User from "../../orm/entities/User";
-import Label from "../../orm/entities/Label";
-import labelSeeder, { USER_LABELED_NOTE_SEEDS } from "../../orm/seeders/labelSeeder";
-import Role from "../../lib/auth/Role";
-import truncateDatabase from "../../orm/utils/truncateDatabase";
-import runSeeder from "../../orm/utils/runSeeder";
 import { agent } from "supertest";
 import { app } from "../..";
+import Role from "../../lib/auth/Role";
 import HttpStatus from "../../lib/errors/HttpStatus";
-import { signIn } from "../../testing/utils";
-import { expect } from "chai";
-import DataSerializer from "../../lib/serializers/DataSerializer";
+import LabelSerializer from "../../lib/serializers/LabelSerializer";
 import { uniq } from "../../lib/utils/arrays";
+import appDataSource from "../../orm/config/appDataSource";
+import Label from "../../orm/entities/Label";
+import User from "../../orm/entities/User";
+import labelSeeder, { USER_LABELED_NOTE_SEEDS } from "../../orm/seeders/labelSeeder";
+import runSeeder from "../../orm/utils/runSeeder";
+import truncateDatabase from "../../orm/utils/truncateDatabase";
+import { signIn } from "../../testing/utils";
 
 const MY_USER_SEED = USER_LABELED_NOTE_SEEDS.find(
   (seed) =>
@@ -169,7 +169,7 @@ describe("Labels controller", () => {
         name: "Foobar",
       };
 
-      return DataSerializer.serialize(labelData)
+      return LabelSerializer.serialize(labelData)
         .then((serialized) => agent(app).post("/labels").send(serialized))
         .then((response) => {
           expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
@@ -184,7 +184,7 @@ describe("Labels controller", () => {
       };
 
       return labelRepository.count().then((originalCount) =>
-        DataSerializer.serialize(labelData)
+        LabelSerializer.serialize(labelData)
           .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.post("/labels").send(serialized)))
           .then((response) => {
             expect(response.status).to.equal(HttpStatus.CREATED);
@@ -206,7 +206,7 @@ describe("Labels controller", () => {
           userId: otherUserId,
         };
 
-        return DataSerializer.serialize(labelData).then((serialized) =>
+        return LabelSerializer.serialize(labelData).then((serialized) =>
           signIn(MY_USER).then(({ authed, id: myUserId }) =>
             authed
               .post("/labels")
@@ -230,14 +230,14 @@ describe("Labels controller", () => {
       dirty = true;
 
       return getUser(OTHER_USER).then(({ id: otherUserId }) => {
-        const labelData: { name: string; user: { id: string } } = {
+        const labelData: Partial<Label> = {
           name: "Foobar",
           user: {
             id: otherUserId,
-          },
+          } as User,
         };
 
-        return DataSerializer.serialize(labelData).then((serialized) =>
+        return LabelSerializer.serialize(labelData).then((serialized) =>
           signIn(MY_USER).then(({ authed, id: myUserId }) =>
             authed
               .post("/labels")
@@ -269,7 +269,7 @@ describe("Labels controller", () => {
           name: name + " (old)",
         };
 
-        return DataSerializer.serialize(labelData)
+        return LabelSerializer.serialize(labelData)
           .then((serialized) => agent(app).patch(`/labels/${id}`).send(serialized))
           .then((response) => expect(response.status).to.equal(HttpStatus.UNAUTHORIZED))
           .then(() => labelRepository.findOneBy({ id }))
@@ -291,7 +291,7 @@ describe("Labels controller", () => {
           name: name + " (old)",
         };
 
-        return DataSerializer.serialize(labelData)
+        return LabelSerializer.serialize(labelData)
           .then((serialized) => signIn(OTHER_USER).then(({ authed }) => authed.patch(`/labels/${id}`).send(serialized)))
           .then((response) => expect(response.status).to.equal(HttpStatus.NOT_FOUND))
           .then(() => labelRepository.findOneBy({ id }))
@@ -313,7 +313,7 @@ describe("Labels controller", () => {
           name: name + "old",
         };
 
-        return DataSerializer.serialize(labelData)
+        return LabelSerializer.serialize(labelData)
           .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.patch(`/labels/${id}`).send(serialized)))
           .then((response) => {
             expect(response.status).to.equal(HttpStatus.OK);
