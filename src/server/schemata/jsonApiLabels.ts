@@ -1,18 +1,20 @@
 import z from "zod";
 import { JsonApiCollectionDocument, JsonApiResource, JsonApiResourceDocument } from "./jsonApiBase";
 
+const NameSchema = z.string().min(1, "Label name cannot be empty.");
+
 export const LabelAttributes = z.object({
-  name: z.string(),
+  name: NameSchema,
   createdAt: z.date(),
   updatedAt: z.date(),
 });
 
 export const LabelCreateAttributes = z.object({
-  name: z.string(),
+  name: NameSchema,
 });
 
 export const LabelUpdateAttributes = z.object({
-  name: z.string().optional(),
+  name: NameSchema.optional(),
 });
 
 export const LabelUserResourceLinkage = z.object({

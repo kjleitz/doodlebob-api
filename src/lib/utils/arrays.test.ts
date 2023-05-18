@@ -1,5 +1,5 @@
 import "mocha";
-import { uniq } from "./arrays";
+import { findLast, uniq } from "./arrays";
 import { expect } from "chai";
 
 const STRINGS = ["foo", "bar", "baz", "bar", "bam"];
@@ -40,6 +40,20 @@ describe("Arrays utils", () => {
       expect(OBJECTS.length).not.to.equal(OBJECTS_UNIQUE_BY_KEY_A.length);
       expect(uniq(OBJECTS, ({ a }) => a).length).to.equal(OBJECTS_UNIQUE_BY_KEY_A.length);
       expect(uniq(OBJECTS, ({ a }) => a)).to.deep.equal(OBJECTS_UNIQUE_BY_KEY_A);
+    });
+  });
+
+  describe("findLast", () => {
+    it("returns the last value matched", () => {
+      const list = ["a", 1, true, 123, undefined, "b", null, "c", 321];
+      const lastString = findLast(list, (value) => typeof value === "string");
+      expect(lastString).to.equal("c");
+    });
+
+    it("returns undefined if no match is found", () => {
+      const list = ["a", 1, true, 123, undefined, "b", null, "c", 321];
+      const lastZ = findLast(list, (value) => value === "z");
+      expect(lastZ).to.be.undefined;
     });
   });
 });

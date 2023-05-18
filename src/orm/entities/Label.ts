@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinTable,
   ManyToMany,
   ManyToOne,
@@ -13,7 +14,8 @@ import User from "./User";
 import Note from "./Note";
 
 @Entity()
-@Unique(["name", "user"])
+@Unique("idx_uniq_Label_on_name_user", ["name", "user"])
+@Index("idx_Label_on_id_user", ["id", "user"])
 export default class Label {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -21,7 +23,7 @@ export default class Label {
   @Column()
   name!: string;
 
-  @ManyToOne(() => User, (user) => user.labels)
+  @ManyToOne(() => User, (user) => user.labels, { nullable: false, onDelete: "CASCADE" })
   user!: User;
 
   @ManyToMany(() => Note, (note) => note.labels)

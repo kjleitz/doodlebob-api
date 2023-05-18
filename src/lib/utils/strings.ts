@@ -38,3 +38,5 @@ export const toSentence = (strings: string[], lastItemSeparator = "and"): string
       strings[strings.length - 1];
 
 export const toParagraph = (strings: string[]): string => strings.map((value) => punctuate(value).trim()).join(" ");
+
+export const toJson = (value: any): string => JSON.stringify(value, null, 2);

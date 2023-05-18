@@ -1,3 +1,4 @@
+import { In } from "typeorm";
 import buildNote from "../../lib/builders/notes/buildNote";
 import editNote from "../../lib/builders/notes/editNote";
 import HttpStatus from "../../lib/errors/HttpStatus";
@@ -8,12 +9,32 @@ import Label from "../../orm/entities/Label";
 import Note from "../../orm/entities/Note";
 import Controller, { Verb } from "../Controller";
 import authGate from "../middleware/gates/authGate";
-import parseBodyAsSchema from "../middleware/helpers/parseBodyAsSchema";
-import settersFromResourceLinkages from "../middleware/helpers/settersFromResourceLinkages";
-import { NoteCreateResourceDocument, NoteUpdateResourceDocument } from "../schemata/jsonApiNotes";
+import {
+  NoteCreateResourceDocument,
+  NoteLabelResourceLinkage,
+  NoteUpdateResourceDocument,
+} from "../schemata/jsonApiNotes";
+import { middleman } from "../../lib/utils/promises";
 
 const notes = new Controller();
 const noteRepository = appDataSource.getRepository(Note);
+const labelRepository = appDataSource.getRepository(Label);
+
+const permitLabelSetters = (
+  labelLinkages: NoteLabelResourceLinkage[] | undefined,
+  userId: string,
+): Promise<Pick<Label, "id">[] | null> => {
+  if (!labelLinkages) return Promise.resolve(null); // do not delete all labels
+  if (labelLinkages.length === 0) return Promise.resolve([]); // delete all labels
+
+  const desiredLabelIds = labelLinkages.map(({ id }) => parseInt(id, 10));
+
+  // Only allow labels to be set on the note which have been created by the
+  // author of the note (the logged-in user).
+  return labelRepository
+    .find({ select: { id: true }, where: { id: In(desiredLabelIds), user: { id: userId } } })
+    .then((labels) => (labels.length ? labels : null));
+};
 
 notes.on(Verb.GET, "/", [authGate], (req) => {
   const userId = req.jwtUserClaims!.id;
@@ -31,41 +52,37 @@ notes.on(Verb.GET, "/:id", [authGate], (req) => {
 
 notes.on(Verb.POST, "/", [authGate], (req, res) => {
   const userId = req.jwtUserClaims!.id;
-  const document = parseBodyAsSchema(req.body, NoteCreateResourceDocument);
+  const document = NoteCreateResourceDocument.parse(req.body);
   const { attributes, relationships } = document.data;
-  // TODO: must restrict only to those labels which are owned by the user
-  const labelsToSet = settersFromResourceLinkages(relationships?.labels?.data, true);
+  const labelLinkages = relationships?.labels?.data;
 
   return buildNote(attributes, userId)
-    .then((note) => {
-      if (labelsToSet) note.labels = labelsToSet as Label[];
-      return noteRepository.save(note);
-    })
-    .then((note) => {
-      res.status(HttpStatus.CREATED);
-      return note;
-    })
+    .then((note) =>
+      permitLabelSetters(labelLinkages, userId).then((labelSetters) => {
+        if (labelSetters) note.labels = labelSetters as Label[];
+        return noteRepository.save(note);
+      }),
+    )
+    .then(middleman(() => res.status(HttpStatus.CREATED)))
     .then((note) => NoteSerializer.serialize(note, { relators: [NoteLabelsRelator] }));
 });
 
 notes.on([Verb.PATCH, Verb.PUT], "/:id", [authGate], (req) => {
   const { id } = req.params;
   const userId = req.jwtUserClaims!.id;
-  const document = parseBodyAsSchema(req.body, NoteUpdateResourceDocument);
+  const document = NoteUpdateResourceDocument.parse(req.body);
   const { attributes, relationships } = document.data;
-  // TODO: must restrict only to those labels which are owned by the user
-  const labelsToSet = settersFromResourceLinkages(relationships?.labels?.data, true);
+  const labelLinkages = relationships?.labels?.data;
 
   return noteRepository
     .findOneOrFail({ where: { id, user: { id: userId } }, relations: { labels: true } })
-    .then((note) => {
-      return note;
-    })
     .then((note) => editNote(note, attributes))
-    .then((edits) => {
-      if (labelsToSet) edits.labels = labelsToSet as Label[];
-      return noteRepository.save(edits);
-    })
+    .then((edits) =>
+      permitLabelSetters(labelLinkages, userId).then((labelSetters) => {
+        if (labelSetters) edits.labels = labelSetters as Label[];
+        return noteRepository.save(edits);
+      }),
+    )
     .then((note) => NoteSerializer.serialize(note, { relators: [NoteLabelsRelator] }));
 });
 

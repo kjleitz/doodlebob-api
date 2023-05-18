@@ -178,34 +178,77 @@ describe("Notes controller", () => {
     it("labels a new note simultaneously on create with some existing labels", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        const noteData = {
-          title: "foobar",
-          body: "bazbam",
-          labels: savedLabels,
-        };
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
 
-        return NoteSerializer.serialize(noteData, { relators: [NoteLabelsRelator] })
-          .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.post("/notes").send(serialized)))
-          .then((response) => {
-            expect(response.status).to.equal(HttpStatus.CREATED);
-            const document = response.body as NoteResourceDocument;
-            expect(document.data.attributes.title).to.equal(noteData.title);
-            expect(document.data.attributes.body).to.equal(noteData.body);
-            expect(document.data.relationships).not.to.be.undefined;
-            expect(document.data.relationships!.labels).not.to.be.undefined;
-            expect(document.data.relationships!.labels!.data.length).to.equal(2);
-            return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
-          })
-          .then((note) => {
-            expect(note.labels).not.to.be.undefined;
-            expect(note.labels.length).to.equal(2);
-            const noteLabelNames = note.labels.map(({ name }) => name).sort();
-            const labelNames = labelsData.map(({ name }) => name).sort();
-            expect(noteLabelNames).to.deep.equal(labelNames);
-          });
+        return labelRepository.save(labels).then((savedLabels) => {
+          // return labelRepository.save(labels).then((savedLabels) => {
+          const noteData = {
+            title: "foobar",
+            body: "bazbam",
+            labels: savedLabels,
+          };
+
+          return NoteSerializer.serialize(noteData, { relators: [NoteLabelsRelator] })
+            .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.post("/notes").send(serialized)))
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.CREATED);
+              const document = response.body as NoteResourceDocument;
+              expect(document.data.attributes.title).to.equal(noteData.title);
+              expect(document.data.attributes.body).to.equal(noteData.body);
+              expect(document.data.relationships).not.to.be.undefined;
+              expect(document.data.relationships!.labels).not.to.be.undefined;
+              expect(document.data.relationships!.labels!.data.length).to.equal(2);
+              return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
+            })
+            .then((note) => {
+              expect(note.labels).not.to.be.undefined;
+              expect(note.labels.length).to.equal(2);
+              const noteLabelNames = note.labels.map(({ name }) => name).sort();
+              const labelNames = labelsData.map(({ name }) => name).sort();
+              expect(noteLabelNames).to.deep.equal(labelNames);
+            });
+        });
+      });
+    });
+
+    it("does not create the note with labels from a different user", () => {
+      dirty = true;
+
+      return Promise.all([getUser(MY_USER), getUser(OTHER_USER)]).then(([myUser, otherUser]) => {
+        const labelsData = [
+          { name: "Foo", user: myUser },
+          { name: "Bar", user: otherUser },
+        ];
+        const labels = labelRepository.create(labelsData);
+
+        return labelRepository.save(labels).then((savedLabels) => {
+          const noteData = {
+            title: "foobar",
+            body: "bazbam",
+            labels: savedLabels.map(({ id }) => ({ id } as Label)),
+          };
+
+          return NoteSerializer.serialize(noteData, { relators: [NoteLabelsRelator] })
+            .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.post("/notes").send(serialized)))
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.CREATED);
+              const document = response.body as NoteResourceDocument;
+              expect(document.data.relationships).not.to.be.undefined;
+              expect(document.data.relationships!.labels).not.to.be.undefined;
+              expect(document.data.relationships!.labels!.data.length).to.equal(1);
+              return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
+            })
+            .then((note) => {
+              expect(note.labels).not.to.be.undefined;
+              expect(note.labels.length).to.equal(1);
+              expect(note.labels[0].name).to.equal("Foo");
+            });
+        });
       });
     });
 
@@ -354,58 +397,60 @@ describe("Notes controller", () => {
     it("updates the note with labels", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        return getNotes(MY_USER).then(([note]) => {
-          const { id, title, body } = note;
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            const { id, title, body } = note;
 
-          const noteData = {
-            labels: savedLabels,
-          };
+            const noteData = {
+              labels: savedLabels,
+            };
 
-          return NoteSerializer.serialize(noteData, { relators: [NoteLabelsRelator] })
-            .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${id}`).send(serialized)))
-            .then((response) => {
-              expect(response.status).to.equal(HttpStatus.OK);
-              const document = response.body as NoteResourceDocument;
-              expect(document.data.attributes.title).to.equal(title);
-              expect(document.data.attributes.body).to.equal(body);
-              expect(document.data.relationships).not.to.be.undefined;
-              expect(document.data.relationships!.labels).not.to.be.undefined;
-              expect(document.data.relationships!.labels!.data.length).to.equal(2);
-              return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
-            })
-            .then((note) => {
-              expect(note.labels).not.to.be.undefined;
-              expect(note.labels.length).to.equal(2);
-              const noteLabelNames = note.labels.map(({ name }) => name).sort();
-              const labelNames = labelsData.map(({ name }) => name).sort();
-              expect(noteLabelNames).to.deep.equal(labelNames);
-            });
+            return NoteSerializer.serialize(noteData, { relators: [NoteLabelsRelator] })
+              .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${id}`).send(serialized)))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.OK);
+                const document = response.body as NoteResourceDocument;
+                expect(document.data.attributes.title).to.equal(title);
+                expect(document.data.attributes.body).to.equal(body);
+                expect(document.data.relationships).not.to.be.undefined;
+                expect(document.data.relationships!.labels).not.to.be.undefined;
+                expect(document.data.relationships!.labels!.data.length).to.equal(2);
+                return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
+              })
+              .then((note) => {
+                expect(note.labels).not.to.be.undefined;
+                expect(note.labels.length).to.equal(2);
+                const noteLabelNames = note.labels.map(({ name }) => name).sort();
+                const labelNames = labelsData.map(({ name }) => name).sort();
+                expect(noteLabelNames).to.deep.equal(labelNames);
+              });
+          });
         });
       });
     });
 
-    it("overwrites the note's labels", () => {
+    it("does not update the note with labels from a different user", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }, { name: "Baz" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        return getNotes(MY_USER).then(([note]) => {
-          note.labels = savedLabels.slice(0, 2);
-
-          return noteRepository.save(note).then((savedNote) => {
-            expect(savedNote.labels.length).to.equal(2);
-
-            const newLabelsNoteData = {
-              labels: savedLabels.slice(2),
+      return Promise.all([getUser(MY_USER), getUser(OTHER_USER)]).then(([myUser, otherUser]) => {
+        const labelsData = [
+          { name: "Foo", user: myUser },
+          { name: "Bar", user: otherUser },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            const noteData = {
+              labels: savedLabels.map(({ id }) => ({ id } as Label)),
             };
 
-            expect(newLabelsNoteData.labels.length).to.equal(1);
-
-            return NoteSerializer.serialize(newLabelsNoteData, { relators: [NoteLabelsRelator] })
+            return NoteSerializer.serialize(noteData, { relators: [NoteLabelsRelator] })
               .then((serialized) =>
                 signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
               )
@@ -417,13 +462,62 @@ describe("Notes controller", () => {
                 expect(document.data.relationships!.labels!.data.length).to.equal(1);
                 return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
               })
-              .then((foundNote) => {
-                expect(foundNote.labels).not.to.be.undefined;
-                expect(foundNote.labels.length).to.equal(1);
-                const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
-                const labelNames = newLabelsNoteData.labels.map(({ name }) => name).sort();
-                expect(noteLabelNames).to.deep.equal(labelNames);
+              .then((note) => {
+                expect(note.labels).not.to.be.undefined;
+                expect(note.labels.length).to.equal(1);
+                expect(note.labels[0].name).to.equal("Foo");
               });
+          });
+        });
+      });
+    });
+
+    it("overwrites the note's labels", () => {
+      dirty = true;
+
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+          { name: "Baz", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            note.labels = savedLabels.slice(0, 2);
+
+            return noteRepository.save(note).then((savedNote) => {
+              expect(savedNote.labels.length).to.equal(2);
+
+              const newLabelsNoteData = {
+                labels: savedLabels.slice(2),
+              };
+
+              expect(newLabelsNoteData.labels.length).to.equal(1);
+
+              return NoteSerializer.serialize(newLabelsNoteData, { relators: [NoteLabelsRelator] })
+                .then((serialized) =>
+                  signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
+                )
+                .then((response) => {
+                  expect(response.status).to.equal(HttpStatus.OK);
+                  const document = response.body as NoteResourceDocument;
+                  expect(document.data.relationships).not.to.be.undefined;
+                  expect(document.data.relationships!.labels).not.to.be.undefined;
+                  expect(document.data.relationships!.labels!.data.length).to.equal(1);
+                  return noteRepository.findOneOrFail({
+                    where: { id: document.data.id! },
+                    relations: { labels: true },
+                  });
+                })
+                .then((foundNote) => {
+                  expect(foundNote.labels).not.to.be.undefined;
+                  expect(foundNote.labels.length).to.equal(1);
+                  const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
+                  const labelNames = newLabelsNoteData.labels.map(({ name }) => name).sort();
+                  expect(noteLabelNames).to.deep.equal(labelNames);
+                });
+            });
           });
         });
       });
@@ -432,41 +526,46 @@ describe("Notes controller", () => {
     it("does NOT overwrite the note's labels if none were included, even if the relator IS attached to the serializer", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        return getNotes(MY_USER).then(([note]) => {
-          note.labels = savedLabels;
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            note.labels = savedLabels;
 
-          return noteRepository.save(note).then((savedNote) => {
-            expect(savedNote.labels.length).to.equal(2);
+            return noteRepository.save(note).then((savedNote) => {
+              expect(savedNote.labels.length).to.equal(2);
 
-            const noteDataForUpdate = {
-              title: note.title + " ...and I still have my labels!",
-            };
+              const noteDataForUpdate = {
+                title: note.title + " ...and I still have my labels!",
+              };
 
-            return NoteSerializer.serialize(noteDataForUpdate, { relators: [NoteLabelsRelator] })
-              .then((serialized) =>
-                signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
-              )
-              .then((response) => {
-                expect(response.status).to.equal(HttpStatus.OK);
-                const document = response.body as NoteResourceDocument;
-                expect(document.data.relationships).not.to.be.undefined;
-                expect(document.data.relationships!.labels).not.to.be.undefined;
-                expect(document.data.relationships!.labels!.data.length).to.equal(2);
-                return noteRepository.findOneOrFail({
-                  where: { id: document.data.id! },
-                  relations: { labels: true },
+              return NoteSerializer.serialize(noteDataForUpdate, { relators: [NoteLabelsRelator] })
+                .then((serialized) =>
+                  signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
+                )
+                .then((response) => {
+                  expect(response.status).to.equal(HttpStatus.OK);
+                  const document = response.body as NoteResourceDocument;
+                  expect(document.data.relationships).not.to.be.undefined;
+                  expect(document.data.relationships!.labels).not.to.be.undefined;
+                  expect(document.data.relationships!.labels!.data.length).to.equal(2);
+                  return noteRepository.findOneOrFail({
+                    where: { id: document.data.id! },
+                    relations: { labels: true },
+                  });
+                })
+                .then((foundNote) => {
+                  expect(foundNote.labels).not.to.be.undefined;
+                  expect(foundNote.labels.length).to.equal(2);
+                  const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
+                  const labelNames = labelsData.map(({ name }) => name).sort();
+                  expect(noteLabelNames).to.deep.equal(labelNames);
                 });
-              })
-              .then((foundNote) => {
-                expect(foundNote.labels).not.to.be.undefined;
-                expect(foundNote.labels.length).to.equal(2);
-                const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
-                const labelNames = labelsData.map(({ name }) => name).sort();
-                expect(noteLabelNames).to.deep.equal(labelNames);
-              });
+            });
           });
         });
       });
@@ -475,38 +574,46 @@ describe("Notes controller", () => {
     it("does NOT overwrite the note's labels if none were included, especially if the relator is NOT attached to the serializer", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        return getNotes(MY_USER).then(([note]) => {
-          note.labels = savedLabels;
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            note.labels = savedLabels;
 
-          return noteRepository.save(note).then((savedNote) => {
-            expect(savedNote.labels.length).to.equal(2);
+            return noteRepository.save(note).then((savedNote) => {
+              expect(savedNote.labels.length).to.equal(2);
 
-            const noteDataForUpdate = {
-              title: note.title + " ...and I still have my labels!",
-            };
+              const noteDataForUpdate = {
+                title: note.title + " ...and I still have my labels!",
+              };
 
-            return NoteSerializer.serialize(noteDataForUpdate)
-              .then((serialized) =>
-                signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
-              )
-              .then((response) => {
-                expect(response.status).to.equal(HttpStatus.OK);
-                const document = response.body as NoteResourceDocument;
-                expect(document.data.relationships).not.to.be.undefined;
-                expect(document.data.relationships!.labels).not.to.be.undefined;
-                expect(document.data.relationships!.labels!.data.length).to.equal(2);
-                return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
-              })
-              .then((foundNote) => {
-                expect(foundNote.labels).not.to.be.undefined;
-                expect(foundNote.labels.length).to.equal(2);
-                const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
-                const labelNames = labelsData.map(({ name }) => name).sort();
-                expect(noteLabelNames).to.deep.equal(labelNames);
-              });
+              return NoteSerializer.serialize(noteDataForUpdate)
+                .then((serialized) =>
+                  signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
+                )
+                .then((response) => {
+                  expect(response.status).to.equal(HttpStatus.OK);
+                  const document = response.body as NoteResourceDocument;
+                  expect(document.data.relationships).not.to.be.undefined;
+                  expect(document.data.relationships!.labels).not.to.be.undefined;
+                  expect(document.data.relationships!.labels!.data.length).to.equal(2);
+                  return noteRepository.findOneOrFail({
+                    where: { id: document.data.id! },
+                    relations: { labels: true },
+                  });
+                })
+                .then((foundNote) => {
+                  expect(foundNote.labels).not.to.be.undefined;
+                  expect(foundNote.labels.length).to.equal(2);
+                  const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
+                  const labelNames = labelsData.map(({ name }) => name).sort();
+                  expect(noteLabelNames).to.deep.equal(labelNames);
+                });
+            });
           });
         });
       });
@@ -515,35 +622,40 @@ describe("Notes controller", () => {
     it("does NOT overwrite the note's labels if they were included as `null`, even if the relator IS attached to the serializer", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        return getNotes(MY_USER).then(([note]) => {
-          note.labels = savedLabels;
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            note.labels = savedLabels;
 
-          return noteRepository.save(note).then((savedNote) => {
-            expect(savedNote.labels.length).to.equal(2);
+            return noteRepository.save(note).then((savedNote) => {
+              expect(savedNote.labels.length).to.equal(2);
 
-            const noteDataForUpdate = {
-              title: note.title + " ...and I still have my labels!",
-              labels: null as unknown as any[],
-            };
+              const noteDataForUpdate = {
+                title: note.title + " ...and I still have my labels!",
+                labels: null as unknown as any[],
+              };
 
-            return NoteSerializer.serialize(noteDataForUpdate, { relators: [NoteLabelsRelator] })
-              .then((serialized) =>
-                signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
-              )
-              .then((response) => {
-                expect(response.status).to.equal(HttpStatus.UNPROCESSABLE_ENTITY);
-                return noteRepository.findOneOrFail({ where: { id: savedNote.id }, relations: { labels: true } });
-              })
-              .then((foundNote) => {
-                expect(foundNote.labels).not.to.be.undefined;
-                expect(foundNote.labels.length).to.equal(2);
-                const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
-                const labelNames = labelsData.map(({ name }) => name).sort();
-                expect(noteLabelNames).to.deep.equal(labelNames);
-              });
+              return NoteSerializer.serialize(noteDataForUpdate, { relators: [NoteLabelsRelator] })
+                .then((serialized) =>
+                  signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
+                )
+                .then((response) => {
+                  expect(response.status).to.equal(HttpStatus.UNPROCESSABLE_ENTITY);
+                  return noteRepository.findOneOrFail({ where: { id: savedNote.id }, relations: { labels: true } });
+                })
+                .then((foundNote) => {
+                  expect(foundNote.labels).not.to.be.undefined;
+                  expect(foundNote.labels.length).to.equal(2);
+                  const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
+                  const labelNames = labelsData.map(({ name }) => name).sort();
+                  expect(noteLabelNames).to.deep.equal(labelNames);
+                });
+            });
           });
         });
       });
@@ -552,39 +664,47 @@ describe("Notes controller", () => {
     it("does NOT overwrite the note's labels if they were included as `null`, especially if the relator is NOT attached to the serializer", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        return getNotes(MY_USER).then(([note]) => {
-          note.labels = savedLabels;
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            note.labels = savedLabels;
 
-          return noteRepository.save(note).then((savedNote) => {
-            expect(savedNote.labels.length).to.equal(2);
+            return noteRepository.save(note).then((savedNote) => {
+              expect(savedNote.labels.length).to.equal(2);
 
-            const noteDataForUpdate = {
-              title: note.title + " ...and I still have my labels!",
-              labels: null as unknown as any[],
-            };
+              const noteDataForUpdate = {
+                title: note.title + " ...and I still have my labels!",
+                labels: null as unknown as any[],
+              };
 
-            return NoteSerializer.serialize(noteDataForUpdate)
-              .then((serialized) =>
-                signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
-              )
-              .then((response) => {
-                expect(response.status).to.equal(HttpStatus.OK);
-                const document = response.body as NoteResourceDocument;
-                expect(document.data.relationships).not.to.be.undefined;
-                expect(document.data.relationships!.labels).not.to.be.undefined;
-                expect(document.data.relationships!.labels!.data.length).to.equal(2);
-                return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
-              })
-              .then((foundNote) => {
-                expect(foundNote.labels).not.to.be.undefined;
-                expect(foundNote.labels.length).to.equal(2);
-                const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
-                const labelNames = labelsData.map(({ name }) => name).sort();
-                expect(noteLabelNames).to.deep.equal(labelNames);
-              });
+              return NoteSerializer.serialize(noteDataForUpdate)
+                .then((serialized) =>
+                  signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
+                )
+                .then((response) => {
+                  expect(response.status).to.equal(HttpStatus.OK);
+                  const document = response.body as NoteResourceDocument;
+                  expect(document.data.relationships).not.to.be.undefined;
+                  expect(document.data.relationships!.labels).not.to.be.undefined;
+                  expect(document.data.relationships!.labels!.data.length).to.equal(2);
+                  return noteRepository.findOneOrFail({
+                    where: { id: document.data.id! },
+                    relations: { labels: true },
+                  });
+                })
+                .then((foundNote) => {
+                  expect(foundNote.labels).not.to.be.undefined;
+                  expect(foundNote.labels.length).to.equal(2);
+                  const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
+                  const labelNames = labelsData.map(({ name }) => name).sort();
+                  expect(noteLabelNames).to.deep.equal(labelNames);
+                });
+            });
           });
         });
       });
@@ -593,39 +713,47 @@ describe("Notes controller", () => {
     it("does NOT overwrite the note's labels if an empty array is included, if the relator is NOT attached to the serializer", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        return getNotes(MY_USER).then(([note]) => {
-          note.labels = savedLabels;
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            note.labels = savedLabels;
 
-          return noteRepository.save(note).then((savedNote) => {
-            expect(savedNote.labels.length).to.equal(2);
+            return noteRepository.save(note).then((savedNote) => {
+              expect(savedNote.labels.length).to.equal(2);
 
-            const noteDataForUpdate = {
-              title: note.title + " ...and I still have my labels!",
-              labels: [],
-            };
+              const noteDataForUpdate = {
+                title: note.title + " ...and I still have my labels!",
+                labels: [],
+              };
 
-            return NoteSerializer.serialize(noteDataForUpdate)
-              .then((serialized) =>
-                signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
-              )
-              .then((response) => {
-                expect(response.status).to.equal(HttpStatus.OK);
-                const document = response.body as NoteResourceDocument;
-                expect(document.data.relationships).not.to.be.undefined;
-                expect(document.data.relationships!.labels).not.to.be.undefined;
-                expect(document.data.relationships!.labels!.data.length).to.equal(2);
-                return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
-              })
-              .then((foundNote) => {
-                expect(foundNote.labels).not.to.be.undefined;
-                expect(foundNote.labels.length).to.equal(2);
-                const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
-                const labelNames = labelsData.map(({ name }) => name).sort();
-                expect(noteLabelNames).to.deep.equal(labelNames);
-              });
+              return NoteSerializer.serialize(noteDataForUpdate)
+                .then((serialized) =>
+                  signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
+                )
+                .then((response) => {
+                  expect(response.status).to.equal(HttpStatus.OK);
+                  const document = response.body as NoteResourceDocument;
+                  expect(document.data.relationships).not.to.be.undefined;
+                  expect(document.data.relationships!.labels).not.to.be.undefined;
+                  expect(document.data.relationships!.labels!.data.length).to.equal(2);
+                  return noteRepository.findOneOrFail({
+                    where: { id: document.data.id! },
+                    relations: { labels: true },
+                  });
+                })
+                .then((foundNote) => {
+                  expect(foundNote.labels).not.to.be.undefined;
+                  expect(foundNote.labels.length).to.equal(2);
+                  const noteLabelNames = foundNote.labels.map(({ name }) => name).sort();
+                  const labelNames = labelsData.map(({ name }) => name).sort();
+                  expect(noteLabelNames).to.deep.equal(labelNames);
+                });
+            });
           });
         });
       });
@@ -634,36 +762,44 @@ describe("Notes controller", () => {
     it("DOES overwrite the note's labels if an empty array is included, if the relator IS attached to the serializer", () => {
       dirty = true;
 
-      const labelsData = [{ name: "Foo" }, { name: "Bar" }];
-      const labels = labelRepository.create(labelsData);
-      return labelRepository.save(labels).then((savedLabels) => {
-        return getNotes(MY_USER).then(([note]) => {
-          note.labels = savedLabels;
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            note.labels = savedLabels;
 
-          return noteRepository.save(note).then((savedNote) => {
-            expect(savedNote.labels.length).to.equal(2);
+            return noteRepository.save(note).then((savedNote) => {
+              expect(savedNote.labels.length).to.equal(2);
 
-            const noteDataForUpdate = {
-              title: note.title + " ...and I still have my labels!",
-              labels: [],
-            };
+              const noteDataForUpdate = {
+                title: note.title + " ...and I still have my labels!",
+                labels: [],
+              };
 
-            return NoteSerializer.serialize(noteDataForUpdate, { relators: [NoteLabelsRelator] })
-              .then((serialized) =>
-                signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
-              )
-              .then((response) => {
-                expect(response.status).to.equal(HttpStatus.OK);
-                const document = response.body as NoteResourceDocument;
-                expect(document.data.relationships).not.to.be.undefined;
-                expect(document.data.relationships!.labels).not.to.be.undefined;
-                expect(document.data.relationships!.labels!.data.length).to.equal(0);
-                return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
-              })
-              .then((foundNote) => {
-                expect(foundNote.labels).not.to.be.undefined;
-                expect(foundNote.labels.length).to.equal(0);
-              });
+              return NoteSerializer.serialize(noteDataForUpdate, { relators: [NoteLabelsRelator] })
+                .then((serialized) =>
+                  signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${note.id}`).send(serialized)),
+                )
+                .then((response) => {
+                  expect(response.status).to.equal(HttpStatus.OK);
+                  const document = response.body as NoteResourceDocument;
+                  expect(document.data.relationships).not.to.be.undefined;
+                  expect(document.data.relationships!.labels).not.to.be.undefined;
+                  expect(document.data.relationships!.labels!.data.length).to.equal(0);
+                  return noteRepository.findOneOrFail({
+                    where: { id: document.data.id! },
+                    relations: { labels: true },
+                  });
+                })
+                .then((foundNote) => {
+                  expect(foundNote.labels).not.to.be.undefined;
+                  expect(foundNote.labels.length).to.equal(0);
+                });
+            });
           });
         });
       });

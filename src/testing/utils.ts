@@ -4,6 +4,7 @@ import { app } from "..";
 import HttpStatus from "../lib/errors/HttpStatus";
 import { ACCESS_TOKEN_HEADER } from "../constants";
 import { expect } from "chai";
+import { toJson } from "../lib/utils/strings";
 
 export function authHeaderForAccessToken(accessToken: string): string {
   return `Bearer ${accessToken}`;
@@ -45,6 +46,12 @@ export const printResponseErrorsMiddleman = (response: Response): Response => {
   if (originalDetail) console.error("\nOriginal error:\n", originalDetail);
   if (originalDetailProjectOnly)
     console.error("\nOriginal error (filtered for project files):\n", originalDetailProjectOnly);
+  return response;
+};
+
+// Insert in promise chain after making a request to log the [serialized] response body
+export const printResponseBodyMiddleman = (response: Response): Response => {
+  console.log(toJson(response.body));
   return response;
 };
 

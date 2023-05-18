@@ -9,8 +9,8 @@ const INVALID_USERNAME_CHARACTERS_MESSAGE = `Username must only consist of chara
 const PASSWORD_TOO_SHORT_MESSAGE = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
 
 const RoleSchema = z.nativeEnum(Role);
-const UsernameSchema = z.string().regex(MATCH_VALID_USERNAME, { message: INVALID_USERNAME_CHARACTERS_MESSAGE });
-const PasswordSchema = z.string().min(MIN_PASSWORD_LENGTH, { message: PASSWORD_TOO_SHORT_MESSAGE });
+const UsernameSchema = z.string().regex(MATCH_VALID_USERNAME, INVALID_USERNAME_CHARACTERS_MESSAGE);
+const PasswordSchema = z.string().min(MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE);
 
 export const UserAttributes = z.object({
   username: z.string(),
@@ -33,20 +33,36 @@ export const UserAdminCreateAttributes = z.object({
   role: RoleSchema.optional(),
 });
 
-export const UserUpdateAttributes = z.object({
-  username: UsernameSchema.optional(),
-  newPassword: PasswordSchema.optional(),
-  oldPassword: z.string().optional(),
-  email: z.string().optional(),
-});
+const PasswordUpdateAttributes = z
+  .object({
+    newPassword: PasswordSchema,
+    oldPassword: z.string().min(1, "Valid current password required to change password."),
+  })
+  .or(
+    z.object({
+      newPassword: z.void(),
+      oldPassword: z.any().nullish(),
+    }),
+  );
 
-export const UserAdminUpdateAttributes = z.object({
-  username: UsernameSchema.optional(),
-  newPassword: PasswordSchema.optional(),
-  oldPassword: z.string().optional(),
-  email: z.string().optional(),
-  role: RoleSchema.optional(),
-});
+export const UserUpdateAttributes = PasswordUpdateAttributes.and(
+  z.object({
+    username: UsernameSchema.optional(),
+    // newPassword: PasswordSchema.optional(),
+    // oldPassword: z.string().optional(),
+    email: z.string().optional(),
+  }),
+);
+
+export const UserAdminUpdateAttributes = PasswordUpdateAttributes.and(
+  z.object({
+    username: UsernameSchema.optional(),
+    // newPassword: PasswordSchema.optional(),
+    // oldPassword: z.string().optional(),
+    email: z.string().optional(),
+    role: RoleSchema.optional(),
+  }),
+);
 
 export const UserAuthAttributes = z.object({
   username: z.string().optional(),

@@ -11,3 +11,5 @@ export function logJson(...args: [label: any, value?: any]): void {
     console.log(args[0], stringifyJson(args[1]));
   }
 }
+
+export const printJson = logJson;

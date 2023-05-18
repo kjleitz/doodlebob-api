@@ -10,7 +10,6 @@ import Controller, { Verb } from "../Controller";
 import authGate from "../middleware/gates/authGate";
 import deleteTokensOnResponse from "../middleware/helpers/deleteTokensOnResponse";
 import getRefreshTokenFromRequest from "../middleware/helpers/getRefreshTokenFromRequest";
-import parseBodyAsSchema from "../middleware/helpers/parseBodyAsSchema";
 import setAccessTokenOnResponse from "../middleware/helpers/setAccessTokenOnResponse";
 import setRefreshTokenOnResponse from "../middleware/helpers/setRefreshTokenOnResponse";
 import { UserAuthResourceDocument, UserCreateResourceDocument } from "../schemata/jsonApiUsers";
@@ -19,7 +18,7 @@ const auth = new Controller();
 const userRepository = appDataSource.getRepository(User);
 
 auth.on(Verb.POST, "/signIn", [], (req, res) => {
-  const document = parseBodyAsSchema(req.body, UserAuthResourceDocument);
+  const document = UserAuthResourceDocument.parse(req.body);
   const { username, password } = document.data.attributes;
   if (!username) throw new UnauthorizedError("Must provide a username.");
   if (!password) throw new UnauthorizedError("Must provide a password.");
@@ -40,7 +39,7 @@ auth.on(Verb.POST, "/signIn", [], (req, res) => {
 });
 
 auth.on(Verb.POST, "/signUp", [], (req, res) => {
-  const document = parseBodyAsSchema(req.body, UserCreateResourceDocument);
+  const document = UserCreateResourceDocument.parse(req.body);
   const { attributes } = document.data;
 
   return buildUser(attributes)

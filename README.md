@@ -125,22 +125,6 @@ pnpm run test --grep "returns your user info"
 > pnpm run test --grep "Users controller Show returns your user info"
 > ```
 
-### Generate migrations
-
-If you make changes to the entities or schema or whatever and you want to generate a migration file automatically to account for the database changes, then (while you have the server running), run:
-
-```
-pnpm run docker:migration:generate ShortNameForChangesYouMade
-```
-
-...and a new migration file will pop up in `src/orm/migrations/` named something like `1683226149242-ShortNameForChangesYouMade.ts` with the necessary queries.
-
-You'll want to run that migration pretty much immediately afterward:
-
-```
-pnpm docker:migration:run
-```
-
 ### Run stuff in the Docker context
 
 While the application is up and running, run:
@@ -173,3 +157,58 @@ me@lappy $ pnpm shell
 /app # echo hi > /dev/null
 /app # pnpm seed:run
 ```
+
+## Development/making changes
+
+### Adding a package (`pnpm i <whatever>`)
+
+If you install a new package, you'll need to do a docker compose down and then back up again, or the `node_modules` volume will be stale and you'll have weird errors telling you you're missing modules despite your editor skipping happily along:
+
+```
+pnpm docker:dev:down
+pnpm docker:dev
+```
+
+### Changing an entity (or: How to generate migrations)
+
+If you make changes to the entities or schema or whatever, you'll want to generate a migration file automatically to account for the database changes. While you have the server running with `pnpm docker:dev`, run the following (swap out `ShortNameForChangesYouMade` with a name that describes the changes this new migration will represent):
+
+```
+pnpm docker:migration:generate ShortNameForChangesYouMade
+```
+
+...and a new migration file will pop up in `src/orm/migrations/` named something like `1683226149242-ShortNameForChangesYouMade.ts` with the necessary queries.
+
+You'll now _either_ want to...
+
+1. ...run that migration pretty much immediately afterward:
+
+```
+pnpm docker:migration:run
+```
+
+2. ...or just restart the dev server, which will run the migrations and seeds for you:
+
+```
+^C
+pnpm docker:dev
+```
+
+#### Running tests locally while migrations are pending
+
+If you're currently in a `pnpm docker:test:shell` shell doing specific tests, or are going to be, and there have been database changes and new migration files, those migrations won't be run until you either run them explicitly or let something else do it for you. The easiest way to run migrations in the `NODE_ENV=test` environment is to run:
+
+```
+pnpm docker:test
+```
+
+...which will spin it all up, run the migrations, and run the tests, too.
+
+If you're impatient, though, and/or conveniently in a `pnpm docker:test:shell` shell already, you can try just running the migrations explicitly:
+
+```
+me@lappy $ pnpm shell
+/app # pnpm migration:run
+```
+
+...which should do the trick.

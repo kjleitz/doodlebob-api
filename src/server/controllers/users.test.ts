@@ -13,7 +13,7 @@ import User from "../../orm/entities/User";
 import userSeeder from "../../orm/seeders/userSeeder";
 import runSeeder from "../../orm/utils/runSeeder";
 import truncateDatabase from "../../orm/utils/truncateDatabase";
-import { signIn } from "../../testing/utils";
+import { printResponseBodyMiddleman, printResponseErrorsMiddleman, signIn } from "../../testing/utils";
 
 const MY_USER = "skyler.white";
 const OTHER_USER = "marie.schrader";
@@ -265,15 +265,11 @@ describe("Users controller", () => {
           signIn(MY_USER)
             // Update to new password fails because old password is not supplied
             .then(({ authed, id }) => authed.patch(`/users/${id}`).send(serialized))
-            .then((response) => {
-              expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
-            })
+            .then((response) => expect(response.status).to.equal(HttpStatus.UNPROCESSABLE_ENTITY))
             // Sign-in with new password fails
             .then(() => LoginSerializer.serialize({ username: MY_USER, password: newPassword }))
             .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
-            .then((response) => {
-              expect(response.status).to.equal(HttpStatus.UNAUTHORIZED);
-            })
+            .then((response) => expect(response.status).to.equal(HttpStatus.UNAUTHORIZED))
             // Sign-in with old password still works
             .then(() => LoginSerializer.serialize({ username: MY_USER, password }))
             .then((serialized) => agent(app).post("/auth/signIn").send(serialized))
