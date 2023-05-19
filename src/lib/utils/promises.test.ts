@@ -1,6 +1,5 @@
-import "mocha";
-import { uniq } from "./arrays";
 import { expect } from "chai";
+import "mocha";
 import { middleman } from "./promises";
 
 describe("Promises utils", () => {

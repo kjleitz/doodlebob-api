@@ -26,7 +26,7 @@ labels.on(Verb.GET, "/:id", [authGate], (req) => {
 
 labels.on(Verb.POST, "/", [authGate], (req, res) => {
   const userId = req.jwtUserClaims!.id;
-  const document = LabelCreateResourceDocument.parse(req.body);
+  const document = LabelCreateResourceDocument.parse(req.document);
   const { attributes } = document.data;
 
   return buildLabel(attributes, userId)
@@ -37,7 +37,7 @@ labels.on(Verb.POST, "/", [authGate], (req, res) => {
 labels.on([Verb.PATCH, Verb.PUT], "/:id", [authGate], (req) => {
   const id = parseInt(req.params.id, 10);
   const userId = req.jwtUserClaims!.id;
-  const document = LabelUpdateResourceDocument.parse(req.body);
+  const document = LabelUpdateResourceDocument.parse(req.document);
   const { attributes } = document.data;
 
   return labelRepository

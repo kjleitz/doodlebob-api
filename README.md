@@ -130,7 +130,7 @@ pnpm run test --grep "returns your user info"
 While the application is up and running, run:
 
 ```
-pnpm shell
+pnpm docker:shell
 ```
 
 ...to open up a shell using the `api` service. From there you can run other pnpm scripts and whatever.

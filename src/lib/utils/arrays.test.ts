@@ -1,6 +1,6 @@
+import { expect } from "chai";
 import "mocha";
 import { findLast, uniq } from "./arrays";
-import { expect } from "chai";
 
 const STRINGS = ["foo", "bar", "baz", "bar", "bam"];
 const STRINGS_SET = new Set(STRINGS);
@@ -16,6 +16,7 @@ const OBJECTS = [
   /* 7 */ { a: "A", b: "hi" },
   /* 8 */ { a: Symbol() },
 ];
+
 const OBJECTS_UNIQUE_BY_KEY_A = [
   OBJECTS[0],
   OBJECTS[1],
@@ -54,6 +55,18 @@ describe("Arrays utils", () => {
       const list = ["a", 1, true, 123, undefined, "b", null, "c", 321];
       const lastZ = findLast(list, (value) => value === "z");
       expect(lastZ).to.be.undefined;
+    });
+
+    it("can return the last element", () => {
+      const list = ["a", 1, true, 123, undefined, "b", null, "c"];
+      const lastString = findLast(list, (value) => typeof value === "string");
+      expect(lastString).to.equal("c");
+    });
+
+    it("can return the first element", () => {
+      const list = ["a", 1, true, 123, undefined, Symbol("hi"), null, 321];
+      const lastString = findLast(list, (value) => typeof value === "string");
+      expect(lastString).to.equal("a");
     });
   });
 });

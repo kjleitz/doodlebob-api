@@ -52,7 +52,7 @@ notes.on(Verb.GET, "/:id", [authGate], (req) => {
 
 notes.on(Verb.POST, "/", [authGate], (req, res) => {
   const userId = req.jwtUserClaims!.id;
-  const document = NoteCreateResourceDocument.parse(req.body);
+  const document = NoteCreateResourceDocument.parse(req.document);
   const { attributes, relationships } = document.data;
   const labelLinkages = relationships?.labels?.data;
 
@@ -70,7 +70,7 @@ notes.on(Verb.POST, "/", [authGate], (req, res) => {
 notes.on([Verb.PATCH, Verb.PUT], "/:id", [authGate], (req) => {
   const { id } = req.params;
   const userId = req.jwtUserClaims!.id;
-  const document = NoteUpdateResourceDocument.parse(req.body);
+  const document = NoteUpdateResourceDocument.parse(req.document);
   const { attributes, relationships } = document.data;
   const labelLinkages = relationships?.labels?.data;
 

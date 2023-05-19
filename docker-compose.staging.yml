@@ -2,6 +2,7 @@ version: "3"
 
 services:
   api:
+    container_name: api
     image: doodlebob.api.staging:${VERSION}
     command: /bin/sh -c "echo 'Running API on staging!' && pnpm run build && pnpm start"
     ports:

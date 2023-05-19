@@ -10,20 +10,25 @@ import appDataSource from "./orm/config/appDataSource";
 import errorHandler from "./server/middleware/handlers/errorHandler";
 import setJwtUserClaims from "./server/middleware/prep/setJwtUserClaims";
 import router from "./server/router";
+import setDocument from "./server/middleware/prep/setDocument";
+import setPage from "./server/middleware/prep/setPage";
 
 // Init
 export const app = express();
 
 // Settings
 app.set("env", Config.env);
+// app.set("query parser", "extended");
 
 // Pre-route middleware
 app.use(cors());
 app.use(helmet());
 app.use(cookieParser());
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(setJwtUserClaims);
+app.use(setDocument);
+app.use(setPage);
 
 // Logging
 const accessLogStream = createRotatingLogStream(`doodlebob-access-${Config.env}.log`);

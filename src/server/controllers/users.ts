@@ -38,10 +38,10 @@ users.on(Verb.POST, "/", [authGate, adminGate], (req, res) => {
   // check here, just to be safe, in case that gate is removed in the future
   // without a corresponding change to the logic.
   if (req.jwtUserClaims?.role === Role.ADMIN) {
-    const document = UserAdminCreateResourceDocument.parse(req.body);
+    const document = UserAdminCreateResourceDocument.parse(req.document);
     builder = buildUserAdmin(document.data.attributes);
   } else {
-    const document = UserCreateResourceDocument.parse(req.body);
+    const document = UserCreateResourceDocument.parse(req.document);
     builder = buildUser(document.data.attributes);
   }
 
@@ -54,11 +54,11 @@ users.on([Verb.PATCH, Verb.PUT], "/:id", [authGate, ownGate], (req) => {
     .findOneByOrFail({ id })
     .then((user) => {
       if (req.jwtUserClaims?.role === Role.ADMIN) {
-        const document = UserAdminUpdateResourceDocument.parse(req.body);
+        const document = UserAdminUpdateResourceDocument.parse(req.document);
         return editUserAdmin(user, document.data.attributes);
       }
 
-      const document = UserUpdateResourceDocument.parse(req.body);
+      const document = UserUpdateResourceDocument.parse(req.document);
       return editUser(user, document.data.attributes);
     })
     .then((edits) => userRepository.save(edits));

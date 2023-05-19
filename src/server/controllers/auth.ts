@@ -17,8 +17,9 @@ import { UserAuthResourceDocument, UserCreateResourceDocument } from "../schemat
 const auth = new Controller();
 const userRepository = appDataSource.getRepository(User);
 
+// TODO: rate limiting
 auth.on(Verb.POST, "/signIn", [], (req, res) => {
-  const document = UserAuthResourceDocument.parse(req.body);
+  const document = UserAuthResourceDocument.parse(req.document);
   const { username, password } = document.data.attributes;
   if (!username) throw new UnauthorizedError("Must provide a username.");
   if (!password) throw new UnauthorizedError("Must provide a password.");
@@ -38,8 +39,9 @@ auth.on(Verb.POST, "/signIn", [], (req, res) => {
     });
 });
 
+// TODO: rate limiting
 auth.on(Verb.POST, "/signUp", [], (req, res) => {
-  const document = UserCreateResourceDocument.parse(req.body);
+  const document = UserCreateResourceDocument.parse(req.document);
   const { attributes } = document.data;
 
   return buildUser(attributes)
@@ -57,6 +59,7 @@ auth.on(Verb.POST, "/signUp", [], (req, res) => {
     });
 });
 
+// TODO: rate limiting
 auth.on(Verb.POST, "/refresh", [], (req, res) => {
   const refreshToken = getRefreshTokenFromRequest(req);
   if (!refreshToken) throw new UnauthorizedError("Valid refresh token required.");

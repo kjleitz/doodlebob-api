@@ -13,6 +13,7 @@ services:
       - ./database/data:/var/lib/postgresql/data/
 
   api:
+    container_name: api
     entrypoint: /bin/sh "./bin/doodlebob-node-dev"
     image: doodlebob.api.development:${VERSION}
     env_file:

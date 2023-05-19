@@ -1,15 +1,14 @@
-import { DataDocument, ErrorDocument } from "ts-japi";
+import * as tsJapi from "ts-japi";
 import JwtUserClaims from "./lib/auth/JwtUserClaims";
+import PageOptions from "./lib/pagination/PageOptions";
+import * as http from "http";
 
 declare global {
   namespace Express {
-    // export interface Request<E extends Record<string, any> = Record<string, any>> {
-    //   jwtUserClaims?: JwtUserClaims;
-    //   body: DataDocument<E> | ErrorDocument;
-    // }
     export interface Request {
       jwtUserClaims?: JwtUserClaims;
-      body: DataDocument | ErrorDocument;
+      document: tsJapi.DataDocument<any> | tsJapi.ErrorDocument | null;
+      page: PageOptions;
     }
   }
 }

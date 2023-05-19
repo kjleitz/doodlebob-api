@@ -2,6 +2,7 @@ version: "3"
 
 services:
   api:
+    container_name: api
     image: doodlebob.api.production:${VERSION}
     # deploy:
     #   resources:

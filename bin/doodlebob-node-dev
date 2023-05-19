@@ -8,4 +8,4 @@ apk add --update bash
 
 pnpm run migration:run
 pnpm run seed:run
-exec pnpm run dev
+exec pnpm run dev:poll
