@@ -3,18 +3,23 @@ import buildNote from "../../lib/builders/notes/buildNote";
 import editNote from "../../lib/builders/notes/editNote";
 import HttpStatus from "../../lib/errors/HttpStatus";
 import NotFoundError from "../../lib/errors/http/NotFoundError";
+import createPaginator from "../../lib/pagination/createPaginator";
+import pageDbOptions from "../../lib/pagination/pageDbOptions";
 import NoteSerializer, { NoteLabelsRelator } from "../../lib/serializers/NoteSerializer";
+import { middleman } from "../../lib/utils/promises";
 import appDataSource from "../../orm/config/appDataSource";
 import Label from "../../orm/entities/Label";
 import Note from "../../orm/entities/Note";
 import Controller, { Verb } from "../Controller";
 import authGate from "../middleware/gates/authGate";
+import baseUrlForPagination from "../middleware/helpers/baseUrlForPagination";
 import {
   NoteCreateResourceDocument,
   NoteLabelResourceLinkage,
   NoteUpdateResourceDocument,
 } from "../schemata/jsonApiNotes";
-import { middleman } from "../../lib/utils/promises";
+
+const MAX_NOTES_PAGE_SIZE = 100;
 
 const notes = new Controller();
 const noteRepository = appDataSource.getRepository(Note);
@@ -38,8 +43,14 @@ const permitLabelSetters = (
 
 notes.on(Verb.GET, "/", [authGate], (req) => {
   const userId = req.jwtUserClaims!.id;
-  // TODO: pagination
-  return noteRepository.find({ where: { user: { id: userId } } });
+  const { skip, take } = pageDbOptions(req.page, MAX_NOTES_PAGE_SIZE);
+
+  return noteRepository
+    .findAndCount({ where: { user: { id: userId } }, order: { createdAt: "DESC" }, skip, take })
+    .then(([notes, count]) => {
+      const paginator = createPaginator(baseUrlForPagination(req), req.page.index, take, count);
+      return NoteSerializer.serialize(notes, { linkers: { paginator } });
+    });
 });
 
 notes.on(Verb.GET, "/:id", [authGate], (req) => {

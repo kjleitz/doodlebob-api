@@ -13,7 +13,7 @@ import noteSeeder, { USER_NOTE_SEEDS } from "../../orm/seeders/noteSeeder";
 import runSeeder from "../../orm/utils/runSeeder";
 import truncateDatabase from "../../orm/utils/truncateDatabase";
 import { signIn } from "../../testing/utils";
-import { NoteResourceDocument } from "../schemata/jsonApiNotes";
+import { NoteCollectionDocument, NoteResourceDocument } from "../schemata/jsonApiNotes";
 
 const MY_USER_SEED = USER_NOTE_SEEDS.find(
   (seed) => (!seed.role || seed.role === Role.PEASANT) && seed.username && seed.notes.length,
@@ -104,6 +104,35 @@ describe("Notes controller", () => {
           expect(response.body.data).to.be.an("array");
           expect(response.body.data.length).to.equal(MY_USER_NOTE_SEEDS.length);
         });
+    });
+
+    it("paginates the list of your notes", () => {
+      return getNotes().then((notes) => {
+        const count = notes.length;
+        expect(count).to.equal(MY_USER_NOTE_SEEDS.length);
+        expect(count).to.be.greaterThan(4);
+        const size = 2;
+        const index = Math.ceil(count / size) - 1; // last page
+
+        return signIn(MY_USER)
+          .then(({ authed }) => authed.get("/notes").query({ page: { index, size } }).send())
+          .then((response) => {
+            expect(response.status).to.equal(HttpStatus.OK);
+            const document = response.body as NoteCollectionDocument;
+            expect(document.data).to.be.an("array");
+            expect(document.data.length).to.equal(2);
+            expect(document.data[0].type).to.equal("notes");
+            expect(document.data[0].attributes.title).to.be.a("string");
+            expect(document.data[0].attributes.body).to.be.a("string");
+            expect(document.links).not.to.be.undefined;
+            expect(document.links!.first).to.be.a("string");
+            expect(document.links!.last).to.be.a("string");
+            expect(document.links!.prev).to.be.a("string");
+            expect(document.links!.prev).to.match(new RegExp(`page\\[index\\]=${Math.max(index - 1, 0)}`));
+            expect(document.links!.prev).to.match(/page\[size\]=2/);
+            expect(document.links!.next).to.be.null;
+          });
+      });
     });
   });
 

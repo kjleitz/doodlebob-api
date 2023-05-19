@@ -158,6 +158,14 @@ me@lappy $ pnpm shell
 /app # pnpm seed:run
 ```
 
+### Open the database console
+
+To open a connection to the database with `psql`, run:
+
+```
+pnpm docker:db:shell
+```
+
 ## Development/making changes
 
 ### Adding a package (`pnpm i <whatever>`)

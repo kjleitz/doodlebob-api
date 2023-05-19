@@ -4,6 +4,9 @@ import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
 import editUser from "../../lib/builders/users/editUser";
 import editUserAdmin from "../../lib/builders/users/editUserAdmin";
 import HttpStatus from "../../lib/errors/HttpStatus";
+import createPaginator from "../../lib/pagination/createPaginator";
+import pageDbOptions from "../../lib/pagination/pageDbOptions";
+import UserSerializer from "../../lib/serializers/UserSerializer";
 import { middleman } from "../../lib/utils/promises";
 import appDataSource from "../../orm/config/appDataSource";
 import User from "../../orm/entities/User";
@@ -11,6 +14,7 @@ import Controller, { Verb } from "../Controller";
 import adminGate from "../middleware/gates/adminGate";
 import authGate from "../middleware/gates/authGate";
 import ownGate from "../middleware/gates/ownGate";
+import baseUrlForPagination from "../middleware/helpers/baseUrlForPagination";
 import {
   UserAdminCreateResourceDocument,
   UserAdminUpdateResourceDocument,
@@ -18,12 +22,17 @@ import {
   UserUpdateResourceDocument,
 } from "../schemata/jsonApiUsers";
 
+const MAX_USERS_PAGE_SIZE = 100;
+
 const users = new Controller();
 const userRepository = appDataSource.getRepository(User);
 
-users.on(Verb.GET, "/", [authGate, adminGate], () => {
-  // TODO: pagination
-  return userRepository.find();
+users.on(Verb.GET, "/", [authGate, adminGate], (req) => {
+  const { skip, take } = pageDbOptions(req.page, MAX_USERS_PAGE_SIZE);
+  return userRepository.findAndCount({ order: { createdAt: "DESC" }, skip, take }).then(([users, count]) => {
+    const paginator = createPaginator(baseUrlForPagination(req), req.page.index, take, count);
+    return UserSerializer.serialize(users, { linkers: { paginator } });
+  });
 });
 
 users.on(Verb.GET, "/:id", [authGate, ownGate], (req) => {

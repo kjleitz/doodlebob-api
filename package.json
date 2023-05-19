@@ -39,6 +39,7 @@
     "docker:seed:run": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm api pnpm run seed:run",
 
     "docker:shell": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm --entrypoint sh api",
+    "docker:db:shell": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm --entrypoint 'sh -c \"PGPASSWORD=$POSTGRES_PASSWORD psql -h $PG_HOST -p $PG_PORT -d $POSTGRES_DB -U $POSTGRES_USER -w\"' database",
     "docker:test:shell": "docker compose --file docker-compose.test.yml run --rm --entrypoint sh --build tests",
     "docker:prune": "docker image prune --force"
   },

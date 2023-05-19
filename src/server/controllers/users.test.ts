@@ -13,7 +13,7 @@ import User from "../../orm/entities/User";
 import userSeeder from "../../orm/seeders/userSeeder";
 import runSeeder from "../../orm/utils/runSeeder";
 import truncateDatabase from "../../orm/utils/truncateDatabase";
-import { printResponseBodyMiddleman, printResponseErrorsMiddleman, signIn } from "../../testing/utils";
+import { signIn } from "../../testing/utils";
 
 const MY_USER = "skyler.white";
 const OTHER_USER = "marie.schrader";
@@ -63,6 +63,18 @@ describe("Users controller", () => {
         .then((response) => {
           expect(response.status).to.equal(HttpStatus.OK);
           expect(response.body.data).to.be.an("array");
+        });
+    });
+
+    it("paginates the returned list of users", () => {
+      return signIn(ADMIN_USER)
+        .then(({ authed }) => authed.get("/users").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          expect(response.body.data).to.be.an("array");
+          expect(response.body.links).not.to.be.undefined;
+          expect(response.body.links.first).to.be.a("string");
+          expect(response.body.links.last).to.be.a("string");
         });
     });
   });

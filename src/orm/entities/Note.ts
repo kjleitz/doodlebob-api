@@ -6,11 +6,13 @@ import {
   UpdateDateColumn,
   ManyToOne,
   ManyToMany,
+  Index,
 } from "typeorm";
 import User from "./User";
 import Label from "./Label";
 
 @Entity()
+@Index("idx_Note_on_user_createdAt")
 export default class Note {
   @PrimaryGeneratedColumn("uuid")
   id!: string;

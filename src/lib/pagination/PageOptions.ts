@@ -1,5 +1,5 @@
 export default interface PageOptions {
-  take: number;
-  skip: number;
+  index: number;
+  size: number;
   given: boolean;
 }

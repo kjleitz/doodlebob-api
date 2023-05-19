@@ -8,11 +8,13 @@ import LabelSerializer from "../../lib/serializers/LabelSerializer";
 import { uniq } from "../../lib/utils/arrays";
 import appDataSource from "../../orm/config/appDataSource";
 import Label from "../../orm/entities/Label";
+import Note from "../../orm/entities/Note";
 import User from "../../orm/entities/User";
 import labelSeeder, { USER_LABELED_NOTE_SEEDS } from "../../orm/seeders/labelSeeder";
 import runSeeder from "../../orm/utils/runSeeder";
 import truncateDatabase from "../../orm/utils/truncateDatabase";
 import { signIn } from "../../testing/utils";
+import { NoteCollectionDocument } from "../schemata/jsonApiNotes";
 
 const MY_USER_SEED = USER_LABELED_NOTE_SEEDS.find(
   (seed) =>
@@ -68,6 +70,7 @@ const ADMIN_USER_NOTE_LABEL_SEEDS = uniq(
 
 const userRepository = appDataSource.getRepository(User);
 const labelRepository = appDataSource.getRepository(Label);
+const noteRepository = appDataSource.getRepository(Note);
 
 const getUser = (username = MY_USER): Promise<User> => {
   return userRepository.findOneByOrFail({ username });
@@ -158,6 +161,76 @@ describe("Labels controller", () => {
             expect(response.body.data.attributes.name).to.equal(name);
           }),
       );
+    });
+
+    describe("Nested notes", () => {
+      it("requires auth", () => {
+        return getLabels().then(([{ id }]) =>
+          agent(app).get(`/labels/${id}/notes`).send().expect(HttpStatus.UNAUTHORIZED),
+        );
+      });
+
+      it("requires you to own the label", () => {
+        return getLabels(OTHER_USER).then(([{ id }]) =>
+          signIn(MY_USER)
+            .then(({ authed }) => authed.get(`/labels/${id}/notes`).send())
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.NOT_FOUND);
+            }),
+        );
+      });
+
+      it("returns the notes under that label", () => {
+        return getLabels(MY_USER).then(([{ id }]) =>
+          signIn(MY_USER)
+            .then(({ authed }) => authed.get(`/labels/${id}/notes`).send())
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.OK);
+              expect(response.body.data).to.be.an("array");
+              expect(response.body.data.length).not.to.equal(0);
+              expect(response.body.data[0].type).to.equal("notes");
+              expect(response.body.data[0].attributes.title).to.be.a("string");
+              expect(response.body.data[0].attributes.body).to.be.a("string");
+            }),
+        );
+      });
+
+      it("paginates the notes under that label", () => {
+        expect(MY_USER).to.equal("label.peasant.1");
+        return getLabels(MY_USER).then((labels) => {
+          const label = labels.find(({ name }) => name === "Cat");
+          expect(label).not.to.be.undefined;
+          const { id } = label!;
+
+          return noteRepository.count({ where: { labels: { id } } }).then((count) => {
+            expect(count).to.be.greaterThan(2);
+
+            return signIn(MY_USER)
+              .then(({ authed }) =>
+                authed
+                  .get(`/labels/${id}/notes`)
+                  .query({ page: { index: 0, size: 2 } })
+                  .send(),
+              )
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.OK);
+                const document = response.body as NoteCollectionDocument;
+                expect(document.data).to.be.an("array");
+                expect(document.data.length).to.equal(2);
+                expect(document.data[0].type).to.equal("notes");
+                expect(document.data[0].attributes.title).to.be.a("string");
+                expect(document.data[0].attributes.body).to.be.a("string");
+                expect(document.links).not.to.be.undefined;
+                expect(document.links!.first).to.be.a("string");
+                expect(document.links!.last).to.be.a("string");
+                expect(document.links!.prev).to.be.null;
+                expect(document.links!.next).to.be.a("string");
+                expect(document.links!.next).to.match(/page\[index\]=1/);
+                expect(document.links!.next).to.match(/page\[size\]=2/);
+              });
+          });
+        });
+      });
     });
   });
 
