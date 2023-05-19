@@ -12,7 +12,7 @@ import User from "./User";
 import Label from "./Label";
 
 @Entity()
-@Index("idx_Note_on_user_createdAt")
+@Index("idx_Note_on_user_createdAt", ["user", "createdAt"])
 export default class Note {
   @PrimaryGeneratedColumn("uuid")
   id!: string;

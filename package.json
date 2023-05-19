@@ -33,10 +33,10 @@
     "docker:db:drop": "docker compose --file docker-compose.development.db-drop.yml up --build --abort-on-container-exit",
     "docker:db:recreate": "pnpm run docker:db:drop && pnpm run docker:db:create",
 
-    "docker:migration:generate": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm api pnpm run migration:generate",
-    "docker:migration:revert": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm api pnpm run migration:revert",
-    "docker:migration:run": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm api pnpm run migration:run",
-    "docker:seed:run": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm api pnpm run seed:run",
+    "docker:migration:generate": "docker compose run --rm api pnpm run migration:generate",
+    "docker:migration:revert": "docker compose run --rm api pnpm run migration:revert",
+    "docker:migration:run": "docker compose run --rm api pnpm run migration:run",
+    "docker:seed:run": "docker compose run --rm api pnpm run seed:run",
 
     "docker:shell": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm --entrypoint sh api",
     "docker:db:shell": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm --entrypoint 'sh -c \"PGPASSWORD=$POSTGRES_PASSWORD psql -h $PG_HOST -p $PG_PORT -d $POSTGRES_DB -U $POSTGRES_USER -w\"' database",
