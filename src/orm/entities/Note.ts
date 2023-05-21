@@ -13,6 +13,7 @@ import Label from "./Label";
 
 @Entity()
 @Index("idx_Note_on_user_createdAt", ["user", "createdAt"])
+@Index("idx_gin_Note_on_fts_doc", { synchronize: false })
 export default class Note {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
@@ -36,4 +37,7 @@ export default class Note {
   @Column()
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  @Column({ type: "tsvector", generatedType: "STORED", asExpression: "to_tsvector('english', title || ' ' || body)" })
+  fts_doc!: string[];
 }

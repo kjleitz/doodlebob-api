@@ -14,8 +14,7 @@ import User from "./User";
 import Note from "./Note";
 
 @Entity()
-@Unique("idx_uniq_Label_on_name_user", ["name", "user"])
-@Index("idx_Label_on_id_user", ["id", "user"])
+@Unique("idx_uniq_Label_on_user_name", ["user", "name"])
 export default class Label {
   @PrimaryGeneratedColumn()
   id!: number;
