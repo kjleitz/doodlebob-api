@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_DIR="$SCRIPT_DIR/.."
+MIGRATIONS_DIR="$PROJECT_DIR/src/orm/migrations"
+
+pnpm run typeorm migration:generate --pretty --dataSource "$PROJECT_DIR/src/orm/config/appDataSource.ts" "$MIGRATIONS_DIR/$1" || exit $?
+exec "$PROJECT_DIR/bin/preserve-fts-index"

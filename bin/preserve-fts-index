@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_DIR="$SCRIPT_DIR/.."
+MIGRATIONS_DIR="$PROJECT_DIR/src/orm/migrations"
+LAST_MIGRATION_FILENAME=$(ls "$MIGRATIONS_DIR" | tail -n 1)
+LAST_MIGRATION_FILEPATH="$MIGRATIONS_DIR/$LAST_MIGRATION_FILENAME"
+
+echo "Deleting 'DROP INDEX idx_gin_Note_on_fts_doc' query from $LAST_MIGRATION_FILEPATH"
+sed -i '/await queryRunner.query(`/{:a;N;/`);/!ba};/DROP INDEX "public"."idx_gin_Note_on_fts_doc"/d' "$LAST_MIGRATION_FILEPATH"
+echo "Deleted the lines!"
+grep 'DROP INDEX "public"."idx_gin_Note_on_fts_doc"' "$LAST_MIGRATION_FILEPATH" && echo "Wait... no I didn't. Dunno why. Go check it out and make sure." && exit 1
+
+echo "Deleting 'CREATE INDEX idx_gin_Note_on_fts_doc' query from $LAST_MIGRATION_FILEPATH"
+sed -i '/await queryRunner.query(`/{:a;N;/`);/!ba};/CREATE INDEX "idx_gin_Note_on_fts_doc" ON "note" ("fts_doc")/d' "$LAST_MIGRATION_FILEPATH"
+echo "Deleted the lines!"
+grep 'CREATE INDEX "idx_gin_Note_on_fts_doc" ON "note" ("fts_doc")' "$LAST_MIGRATION_FILEPATH" && echo "Wait... no I didn't. Dunno why. Go check it out and make sure." && exit 1
+
+exit 0

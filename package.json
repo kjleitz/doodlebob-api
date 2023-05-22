@@ -22,10 +22,11 @@
     "docker:test": "docker compose --file docker-compose.test.yml up --build --abort-on-container-exit",
 
     "migration:create": "cd ./src/orm/migrations && typeorm-ts-node-commonjs migration:create",
-    "migration:generate": "cd ./src/orm/migrations && typeorm-ts-node-commonjs migration:generate --pretty --dataSource ../config/appDataSource.ts",
+    "migration:generate": "bin/generate-migration-but-preserve-fts-index",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert --dataSource ./src/orm/config/appDataSource.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run --dataSource ./src/orm/config/appDataSource.ts",
     "seed:run": "ts-node ./src/setup/dbSeed.ts",
+    "subscriber:create": "cd ./src/orm/subscribers && typeorm-ts-node-commonjs subscriber:create",
 
     "db:create": "ts-node ./src/setup/dbCreate.ts",
     "db:drop": "ts-node ./src/setup/dbDrop.ts",
@@ -41,7 +42,9 @@
     "docker:shell": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm --entrypoint sh api",
     "docker:db:shell": "docker compose --file docker-compose.yml --file docker-compose.development.yml run --rm --entrypoint 'sh -c \"PGPASSWORD=$POSTGRES_PASSWORD psql -h $PG_HOST -p $PG_PORT -d $POSTGRES_DB -U $POSTGRES_USER -w\"' database",
     "docker:test:shell": "docker compose --file docker-compose.test.yml run --rm --entrypoint sh --build tests",
-    "docker:prune": "docker image prune --force"
+    "docker:prune": "docker image prune --force",
+
+    "typeorm": "typeorm-ts-node-commonjs"
   },
 
   "keywords": [

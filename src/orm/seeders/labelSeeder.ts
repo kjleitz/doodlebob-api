@@ -94,7 +94,7 @@ export const USER_LABELED_NOTE_SEEDS: (UserAdminCreateAttributes & {
         labels: [],
       },
       {
-        title: "Birthday plans",
+        title: "Birthday plans, baby",
         body: "- sleep\n- play video games",
         labels: ["Birthday"],
       },
@@ -102,45 +102,35 @@ export const USER_LABELED_NOTE_SEEDS: (UserAdminCreateAttributes & {
   },
 ];
 
-// dealwithit.jpg
-const labelSeeder: Seeder<Label[]> = (entityManager) => {
+const labelSeeder: Seeder<Label[]> = async (entityManager) => {
   const userRepository = entityManager.getRepository(User);
   const noteRepository = entityManager.getRepository(Note);
   const labelRepository = entityManager.getRepository(Label);
-  const saves = USER_LABELED_NOTE_SEEDS.map((userSeed) =>
-    buildUserAdmin(userSeed)
-      .then((user) => userRepository.save(user))
-      .then((user) =>
-        Promise.all(
-          userSeed.notes.map((noteSeed) =>
-            buildNote(noteSeed, user.id)
-              .then((note) => noteRepository.save(note))
-              .then((note) =>
-                Promise.all(
-                  noteSeed.labels.map((name) =>
-                    buildLabel({ name }, user.id).then((label) =>
-                      // labelRepository
-                      //   .findOneBy({ name })
-                      //   .then((existingLabel) => existingLabel ?? labelRepository.save(label)),
-                      labelRepository
-                        .upsert(label, ["name", "user"])
-                        .then(() => labelRepository.findOneByOrFail({ name })),
-                    ),
-                  ),
-                ).then((labels) => {
-                  note.labels = labels;
-                  return noteRepository.save(note);
-                }),
-              ),
-          ),
-        ),
-      ),
-  );
 
-  return Promise.all(saves)
-    .then((noteses) => noteses.flat())
-    .then((notes) => notes.map(({ labels }) => labels))
-    .then((labelses) => labelses.flat());
+  const notesSaves = USER_LABELED_NOTE_SEEDS.map(async (userSeed) => {
+    const user = await buildUserAdmin(userSeed);
+    const savedUser = await userRepository.save(user);
+
+    const noteSaves = userSeed.notes.map(async (noteSeed) => {
+      const labelNames = noteSeed.labels;
+      const labelSaves = labelNames.map((name) => buildLabel({ name }, savedUser.id));
+      const labels = await Promise.all(labelSaves);
+      const insertResult = await labelRepository.upsert(labels, ["name", "user"]);
+      const labelsToSet = insertResult.identifiers as Label[];
+      const note = await buildNote(noteSeed, savedUser.id);
+      note.labels = labelsToSet;
+      return noteRepository.save(note);
+    });
+
+    return Promise.all(noteSaves);
+  });
+
+  const noteses = await Promise.all(notesSaves);
+  const notes = noteses.flat();
+  const labelses = notes.map(({ labels }) => labels);
+  const labels = labelses.flat();
+
+  return labels;
 };
 
 export default labelSeeder;

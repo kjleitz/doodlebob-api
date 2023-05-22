@@ -1,6 +1,7 @@
 FROM node:20-alpine3.17
 
 RUN npm i -g pnpm
+RUN apk add --update bash sed
 
 RUN mkdir -p /app/
 WORKDIR /app/

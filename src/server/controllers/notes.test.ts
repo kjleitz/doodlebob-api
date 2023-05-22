@@ -215,7 +215,6 @@ describe("Notes controller", () => {
         const labels = labelRepository.create(labelsData);
 
         return labelRepository.save(labels).then((savedLabels) => {
-          // return labelRepository.save(labels).then((savedLabels) => {
           const noteData = {
             title: "foobar",
             body: "bazbam",
@@ -240,6 +239,47 @@ describe("Notes controller", () => {
               const noteLabelNames = note.labels.map(({ name }) => name).sort();
               const labelNames = labelsData.map(({ name }) => name).sort();
               expect(noteLabelNames).to.deep.equal(labelNames);
+            });
+        });
+      });
+    });
+
+    it("results in cached label names on the note when labels are added on create", () => {
+      dirty = true;
+
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+
+        return labelRepository.save(labels).then((savedLabels) => {
+          const noteData = {
+            title: "foobar",
+            body: "bazbam",
+            labels: savedLabels,
+          };
+
+          return NoteSerializer.serialize(noteData, { relators: [NoteLabelsRelator] })
+            .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.post("/notes").send(serialized)))
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.CREATED);
+              const document = response.body as NoteResourceDocument;
+              expect(document.data.attributes.title).to.equal(noteData.title);
+              expect(document.data.attributes.body).to.equal(noteData.body);
+              expect(document.data.relationships).not.to.be.undefined;
+              expect(document.data.relationships!.labels).not.to.be.undefined;
+              expect(document.data.relationships!.labels!.data.length).to.equal(2);
+              return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
+            })
+            .then((note) => {
+              expect(note.labels).not.to.be.undefined;
+              expect(note.labels.length).to.equal(2);
+              const noteLabelNames = note.labels.map(({ name }) => name).sort();
+              const labelNames = labelsData.map(({ name }) => name).sort();
+              expect(noteLabelNames).to.deep.equal(labelNames);
+              expect(note.labelNamesCache).to.deep.equal(labelNames);
             });
         });
       });
@@ -458,6 +498,48 @@ describe("Notes controller", () => {
                 const noteLabelNames = note.labels.map(({ name }) => name).sort();
                 const labelNames = labelsData.map(({ name }) => name).sort();
                 expect(noteLabelNames).to.deep.equal(labelNames);
+              });
+          });
+        });
+      });
+    });
+
+    it("results in cached label names on the note when labels are added on update", () => {
+      dirty = true;
+
+      return getUser(MY_USER).then((user) => {
+        const labelsData = [
+          { name: "Foo", user },
+          { name: "Bar", user },
+        ];
+        const labels = labelRepository.create(labelsData);
+        return labelRepository.save(labels).then((savedLabels) => {
+          return getNotes(MY_USER).then(([note]) => {
+            const { id, title, body } = note;
+
+            const noteData = {
+              labels: savedLabels,
+            };
+
+            return NoteSerializer.serialize(noteData, { relators: [NoteLabelsRelator] })
+              .then((serialized) => signIn(MY_USER).then(({ authed }) => authed.patch(`/notes/${id}`).send(serialized)))
+              .then((response) => {
+                expect(response.status).to.equal(HttpStatus.OK);
+                const document = response.body as NoteResourceDocument;
+                expect(document.data.attributes.title).to.equal(title);
+                expect(document.data.attributes.body).to.equal(body);
+                expect(document.data.relationships).not.to.be.undefined;
+                expect(document.data.relationships!.labels).not.to.be.undefined;
+                expect(document.data.relationships!.labels!.data.length).to.equal(2);
+                return noteRepository.findOneOrFail({ where: { id: document.data.id! }, relations: { labels: true } });
+              })
+              .then((note) => {
+                expect(note.labels).not.to.be.undefined;
+                expect(note.labels.length).to.equal(2);
+                const noteLabelNames = note.labels.map(({ name }) => name).sort();
+                const labelNames = labelsData.map(({ name }) => name).sort();
+                expect(noteLabelNames).to.deep.equal(labelNames);
+                expect(note.labelNamesCache).to.deep.equal(labelNames);
               });
           });
         });

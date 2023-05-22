@@ -6,6 +6,7 @@ import NotFoundError from "../../lib/errors/http/NotFoundError";
 import createPaginator from "../../lib/pagination/createPaginator";
 import pageDbOptions from "../../lib/pagination/pageDbOptions";
 import NoteSerializer, { NoteLabelsRelator } from "../../lib/serializers/NoteSerializer";
+import { sortedUniq } from "../../lib/utils/arrays";
 import { middleman } from "../../lib/utils/promises";
 import appDataSource from "../../orm/config/appDataSource";
 import Label from "../../orm/entities/Label";
@@ -28,7 +29,7 @@ const labelRepository = appDataSource.getRepository(Label);
 const permitLabelSetters = (
   labelLinkages: NoteLabelResourceLinkage[] | undefined,
   userId: string,
-): Promise<Pick<Label, "id">[] | null> => {
+): Promise<Label[] | null> => {
   if (!labelLinkages) return Promise.resolve(null); // do not delete all labels
   if (labelLinkages.length === 0) return Promise.resolve([]); // delete all labels
 
@@ -37,7 +38,7 @@ const permitLabelSetters = (
   // Only allow labels to be set on the note which have been created by the
   // author of the note (the logged-in user).
   return labelRepository
-    .find({ select: { id: true }, where: { id: In(desiredLabelIds), user: { id: userId } } })
+    .find({ where: { id: In(desiredLabelIds), user: { id: userId } } })
     .then((labels) => (labels.length ? labels : null));
 };
 
@@ -70,7 +71,7 @@ notes.on(Verb.POST, "/", [authGate], (req, res) => {
   return buildNote(attributes, userId)
     .then((note) =>
       permitLabelSetters(labelLinkages, userId).then((labelSetters) => {
-        if (labelSetters) note.labels = labelSetters as Label[];
+        if (labelSetters) note.labels = labelSetters;
         return noteRepository.save(note);
       }),
     )
@@ -90,7 +91,20 @@ notes.on([Verb.PATCH, Verb.PUT], "/:id", [authGate], (req) => {
     .then((note) => editNote(note, attributes))
     .then((edits) =>
       permitLabelSetters(labelLinkages, userId).then((labelSetters) => {
-        if (labelSetters) edits.labels = labelSetters as Label[];
+        if (labelSetters) edits.labels = labelSetters;
+
+        // Entity subscribers don't fire their `beforeUpdate` hooks if only a
+        // relation is changing, so we gotta update the cache manually on
+        // note update in case all we're doing is adding/removing labels on the
+        // note.
+        // TODO: This is fragile. There is also, theoretically, a race condition
+        // here. We grab the original labels along with the note, then set them
+        // again when we save the record. Right in the middle of that, a new
+        // label could be associated with the record and then this would
+        // steamroll that new label. It's pretty unlikely, though, I think. Come
+        // back to it.
+        edits.labelNamesCache = sortedUniq(edits.labels.map(({ name }) => name).sort());
+
         return noteRepository.save(edits);
       }),
     )
