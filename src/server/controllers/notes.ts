@@ -6,6 +6,8 @@ import NotFoundError from "../../lib/errors/http/NotFoundError";
 import createPaginator from "../../lib/pagination/createPaginator";
 import pageDbOptions from "../../lib/pagination/pageDbOptions";
 import NoteSerializer, { NoteLabelsRelator } from "../../lib/serializers/NoteSerializer";
+import { SortOrder } from "../../lib/sort/SortOptions";
+import orderFromSortOptions from "../../lib/sort/orderFromSortOptions";
 import { sortedUniq } from "../../lib/utils/arrays";
 import { middleman } from "../../lib/utils/promises";
 import appDataSource from "../../orm/config/appDataSource";
@@ -45,13 +47,17 @@ const permitLabelSetters = (
 notes.on(Verb.GET, "/", [authGate], (req) => {
   const userId = req.jwtUserClaims!.id;
   const { skip, take } = pageDbOptions(req.page, MAX_NOTES_PAGE_SIZE);
+  const order = orderFromSortOptions(req.sort, "createdAt", {
+    createdAt: SortOrder.DESC,
+    updatedAt: SortOrder.DESC,
+    title: SortOrder.ASC,
+    body: SortOrder.ASC,
+  });
 
-  return noteRepository
-    .findAndCount({ where: { user: { id: userId } }, order: { createdAt: "DESC" }, skip, take })
-    .then(([notes, count]) => {
-      const paginator = createPaginator(baseUrlForPagination(req), req.page.index, take, count);
-      return NoteSerializer.serialize(notes, { linkers: { paginator } });
-    });
+  return noteRepository.findAndCount({ where: { user: { id: userId } }, order, skip, take }).then(([notes, count]) => {
+    const paginator = createPaginator(baseUrlForPagination(req), req.page.index, take, count);
+    return NoteSerializer.serialize(notes, { linkers: { paginator } });
+  });
 });
 
 notes.on(Verb.GET, "/:id", [authGate], (req) => {

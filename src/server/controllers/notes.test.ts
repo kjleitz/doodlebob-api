@@ -5,6 +5,7 @@ import { app } from "../..";
 import Role from "../../lib/auth/Role";
 import HttpStatus from "../../lib/errors/HttpStatus";
 import NoteSerializer, { NoteLabelsRelator } from "../../lib/serializers/NoteSerializer";
+import { isNullish } from "../../lib/utils/checks";
 import appDataSource from "../../orm/config/appDataSource";
 import Label from "../../orm/entities/Label";
 import Note from "../../orm/entities/Note";
@@ -16,7 +17,7 @@ import { signIn } from "../../testing/utils";
 import { NoteCollectionDocument, NoteResourceDocument } from "../schemata/jsonApiNotes";
 
 const MY_USER_SEED = USER_NOTE_SEEDS.find(
-  (seed) => (!seed.role || seed.role === Role.PEASANT) && seed.username && seed.notes.length,
+  (seed) => (isNullish(seed.role) || seed.role === Role.PEASANT) && seed.username && seed.notes.length,
 );
 if (!MY_USER_SEED) throw new Error("User note seeds should have a peasant user with a non-empty username and notes.");
 
@@ -25,7 +26,10 @@ const MY_USER_NOTE_SEEDS = MY_USER_SEED.notes;
 
 const OTHER_USER_SEED = USER_NOTE_SEEDS.find(
   (seed) =>
-    (!seed.role || seed.role === Role.PEASANT) && seed.username && seed.username !== MY_USER && seed.notes.length,
+    (isNullish(seed.role) || seed.role === Role.PEASANT) &&
+    seed.username &&
+    seed.username !== MY_USER &&
+    seed.notes.length,
 );
 if (!OTHER_USER_SEED)
   throw new Error("User note seeds should have a second (different) peasant user with a non-empty username and notes.");
@@ -106,6 +110,114 @@ describe("Notes controller", () => {
         });
     });
 
+    it("returns a sorted list of your notes", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?sort=createdAt").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).to.equal(MY_USER_NOTE_SEEDS.length);
+          expect(document.data.length).to.be.greaterThan(5);
+          let prevCreatedAt = new Date(document.data[0].attributes.createdAt);
+          for (let i = 1; i < document.data.length; i++) {
+            const createdAt = new Date(document.data[i].attributes.createdAt);
+            expect(createdAt).to.be.lessThanOrEqual(prevCreatedAt);
+            prevCreatedAt = createdAt;
+          }
+        });
+    });
+
+    it("returns a sorted list of your notes, reversed", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?sort=-createdAt").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).to.equal(MY_USER_NOTE_SEEDS.length);
+          expect(document.data.length).to.be.greaterThan(5);
+          let prevCreatedAt = new Date(document.data[0].attributes.createdAt);
+          for (let i = 1; i < document.data.length; i++) {
+            const createdAt = new Date(document.data[i].attributes.createdAt);
+            expect(createdAt).to.be.greaterThanOrEqual(prevCreatedAt);
+            prevCreatedAt = createdAt;
+          }
+        });
+    });
+
+    it("sorts by createdAt in descending order by default", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?sort=createdAt").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).to.equal(MY_USER_NOTE_SEEDS.length);
+          expect(document.data.length).to.be.greaterThan(5);
+          let prevCreatedAt = new Date(document.data[0].attributes.createdAt);
+          for (let i = 1; i < document.data.length; i++) {
+            const createdAt = new Date(document.data[i].attributes.createdAt);
+            expect(createdAt).to.be.lessThanOrEqual(prevCreatedAt);
+            prevCreatedAt = createdAt;
+          }
+        });
+    });
+
+    it("sorts by updatedAt in descending order by default", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?sort=updatedAt").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).to.equal(MY_USER_NOTE_SEEDS.length);
+          expect(document.data.length).to.be.greaterThan(5);
+          let prevUpdatedAt = new Date(document.data[0].attributes.updatedAt);
+          for (let i = 1; i < document.data.length; i++) {
+            const updatedAt = new Date(document.data[i].attributes.updatedAt);
+            expect(updatedAt).to.be.lessThanOrEqual(prevUpdatedAt);
+            prevUpdatedAt = updatedAt;
+          }
+        });
+    });
+
+    it("sorts by title in ascending order by default", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?sort=title").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).to.equal(MY_USER_NOTE_SEEDS.length);
+          expect(document.data.length).to.be.greaterThan(5);
+          let prevTitle = document.data[0].attributes.title;
+          for (let i = 1; i < document.data.length; i++) {
+            const { title } = document.data[i].attributes;
+            expect([prevTitle, title].sort()).to.deep.equal([prevTitle, title]);
+            prevTitle = title;
+          }
+        });
+    });
+
+    it("sorts by title in descending order when reversed", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?sort=-title").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).to.equal(MY_USER_NOTE_SEEDS.length);
+          expect(document.data.length).to.be.greaterThan(5);
+          let prevTitle = document.data[0].attributes.title;
+          for (let i = 1; i < document.data.length; i++) {
+            const { title } = document.data[i].attributes;
+            expect([prevTitle, title].sort()).to.deep.equal([title, prevTitle]);
+            prevTitle = title;
+          }
+        });
+    });
+
     it("paginates the list of your notes", () => {
       return getNotes().then((notes) => {
         const count = notes.length;
@@ -132,6 +244,77 @@ describe("Notes controller", () => {
             expect(document.links!.prev).to.match(/page\[size\]=2/);
             expect(document.links!.next).to.be.null;
           });
+      });
+    });
+
+    it("retains sort order when paginating the list of your notes", () => {
+      return getNotes().then((notes) => {
+        const count = notes.length;
+        expect(count).to.equal(MY_USER_NOTE_SEEDS.length);
+        expect(count).to.be.greaterThan(4);
+        const size = 2;
+        const index = 0; // first page
+
+        return signIn(MY_USER).then(({ authed }) => {
+          return authed
+            .get("/notes?sort=-title")
+            .query({ page: { index, size } })
+            .send()
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.OK);
+              const document = response.body as NoteCollectionDocument;
+              expect(document.data).to.be.an("array");
+              expect(document.data.length).to.equal(2);
+              expect(document.data[0].type).to.equal("notes");
+              expect(document.data[0].attributes.title).to.be.a("string");
+              expect(document.data[0].attributes.title.length).not.to.equal(0);
+
+              const firstTitle = document.data[0].attributes.title;
+              const secondTitle = document.data[1].attributes.title;
+              expect(firstTitle.length).not.to.equal(0);
+              expect([firstTitle, secondTitle].sort()).to.deep.equal([secondTitle, firstTitle]);
+
+              expect(document.links).not.to.be.undefined;
+              const nextLink = document.links!.next as string;
+              expect(nextLink).to.be.a("string");
+              expect(nextLink).to.match(new RegExp(`page\\[index\\]=${index + 1}`));
+              expect(nextLink).to.match(/page\[size\]=2/);
+              expect(nextLink).to.match(/sort=-title/);
+
+              const nextUrl = new URL(nextLink);
+              const nextPath = nextUrl.pathname + nextUrl.search;
+
+              return authed
+                .get(nextPath)
+                .send()
+                .then((response) => {
+                  expect(response.status).to.equal(HttpStatus.OK);
+                  const document = response.body as NoteCollectionDocument;
+                  expect(document.data).to.be.an("array");
+                  expect(document.data.length).to.equal(2);
+                  expect(document.data[0].type).to.equal("notes");
+                  expect(document.data[0].attributes.title).to.be.a("string");
+                  expect(document.data[0].attributes.title.length).not.to.equal(0);
+
+                  const thirdTitle = document.data[0].attributes.title;
+                  const fourthTitle = document.data[1].attributes.title;
+                  expect(thirdTitle.length).not.to.equal(0);
+                  expect([firstTitle, secondTitle, thirdTitle, fourthTitle].sort()).to.deep.equal([
+                    fourthTitle,
+                    thirdTitle,
+                    secondTitle,
+                    firstTitle,
+                  ]);
+
+                  expect(document.links).not.to.be.undefined;
+                  const nextLink = document.links!.next as string;
+                  expect(nextLink).to.be.a("string");
+                  expect(nextLink).to.match(new RegExp(`page\\[index\\]=${index + 2}`));
+                  expect(nextLink).to.match(/page\[size\]=2/);
+                  expect(nextLink).to.match(/sort=-title/);
+                });
+            });
+        });
       });
     });
   });

@@ -12,6 +12,8 @@ import setJwtUserClaims from "./server/middleware/prep/setJwtUserClaims";
 import router from "./server/router";
 import setDocument from "./server/middleware/prep/setDocument";
 import setPage from "./server/middleware/prep/setPage";
+import setFilter from "./server/middleware/prep/setFilter";
+import setSort from "./server/middleware/prep/setSort";
 
 // Init
 export const app = express();
@@ -29,6 +31,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(setJwtUserClaims);
 app.use(setDocument);
 app.use(setPage);
+app.use(setFilter);
+app.use(setSort);
 
 // Logging
 const accessLogStream = createRotatingLogStream(`doodlebob-access-${Config.env}.log`);

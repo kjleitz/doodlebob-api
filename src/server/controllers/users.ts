@@ -7,6 +7,8 @@ import HttpStatus from "../../lib/errors/HttpStatus";
 import createPaginator from "../../lib/pagination/createPaginator";
 import pageDbOptions from "../../lib/pagination/pageDbOptions";
 import UserSerializer from "../../lib/serializers/UserSerializer";
+import { SortOrder } from "../../lib/sort/SortOptions";
+import orderFromSortOptions from "../../lib/sort/orderFromSortOptions";
 import { middleman } from "../../lib/utils/promises";
 import appDataSource from "../../orm/config/appDataSource";
 import User from "../../orm/entities/User";
@@ -29,7 +31,14 @@ const userRepository = appDataSource.getRepository(User);
 
 users.on(Verb.GET, "/", [authGate, adminGate], (req) => {
   const { skip, take } = pageDbOptions(req.page, MAX_USERS_PAGE_SIZE);
-  return userRepository.findAndCount({ order: { createdAt: "DESC" }, skip, take }).then(([users, count]) => {
+  const order = orderFromSortOptions(req.sort, "createdAt", {
+    createdAt: SortOrder.DESC,
+    updatedAt: SortOrder.DESC,
+    username: SortOrder.ASC,
+    email: SortOrder.ASC,
+  });
+
+  return userRepository.findAndCount({ order, skip, take }).then(([users, count]) => {
     const paginator = createPaginator(baseUrlForPagination(req), req.page.index, take, count);
     return UserSerializer.serialize(users, { linkers: { paginator } });
   });

@@ -6,6 +6,7 @@ import Role from "../../lib/auth/Role";
 import HttpStatus from "../../lib/errors/HttpStatus";
 import LabelSerializer from "../../lib/serializers/LabelSerializer";
 import { uniq } from "../../lib/utils/arrays";
+import { isNullish } from "../../lib/utils/checks";
 import appDataSource from "../../orm/config/appDataSource";
 import Label from "../../orm/entities/Label";
 import Note from "../../orm/entities/Note";
@@ -15,10 +16,11 @@ import runSeeder from "../../orm/utils/runSeeder";
 import truncateDatabase from "../../orm/utils/truncateDatabase";
 import { signIn } from "../../testing/utils";
 import { NoteCollectionDocument } from "../schemata/jsonApiNotes";
+import { LabelCollectionDocument } from "../schemata/jsonApiLabels";
 
 const MY_USER_SEED = USER_LABELED_NOTE_SEEDS.find(
   (seed) =>
-    (!seed.role || seed.role === Role.PEASANT) &&
+    (isNullish(seed.role) || seed.role === Role.PEASANT) &&
     seed.username &&
     seed.notes.length &&
     seed.notes.some(({ labels }) => labels.length),
@@ -36,7 +38,7 @@ const MY_USER_NOTE_LABEL_SEEDS = uniq(
 
 const OTHER_USER_SEED = USER_LABELED_NOTE_SEEDS.find(
   (seed) =>
-    (!seed.role || seed.role === Role.PEASANT) &&
+    (isNullish(seed.role) || seed.role === Role.PEASANT) &&
     seed.username &&
     seed.username !== MY_USER &&
     seed.notes.length &&
@@ -134,6 +136,42 @@ describe("Labels controller", () => {
           expect(response.body.data.length).to.equal(MY_USER_NOTE_LABEL_SEEDS.length);
         });
     });
+
+    it("sorts the returned labels by name by default", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/labels").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as LabelCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).to.equal(MY_USER_NOTE_LABEL_SEEDS.length);
+          expect(document.data.length).to.be.greaterThan(5);
+          let prevName = document.data[0].attributes.name;
+          for (let i = 1; i < document.data.length; i++) {
+            const { name } = document.data[i].attributes;
+            expect([prevName, name].sort()).to.deep.equal([prevName, name]);
+            prevName = name;
+          }
+        });
+    });
+
+    it("sorts the returned labels by given preference", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/labels?sort=-name").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as LabelCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).to.equal(MY_USER_NOTE_LABEL_SEEDS.length);
+          expect(document.data.length).to.be.greaterThan(5);
+          let prevName = document.data[0].attributes.name;
+          for (let i = 1; i < document.data.length; i++) {
+            const { name } = document.data[i].attributes;
+            expect([prevName, name].sort()).to.deep.equal([name, prevName]);
+            prevName = name;
+          }
+        });
+    });
   });
 
   describe("Show", () => {
@@ -193,6 +231,32 @@ describe("Labels controller", () => {
               expect(response.body.data[0].attributes.body).to.be.a("string");
             }),
         );
+      });
+
+      it("returns sorted notes under that label according to sort options", () => {
+        return getLabels(MY_USER).then((labels) => {
+          const label = labels.find(({ name }) => name === "Cat");
+          expect(label).not.to.be.undefined;
+          const id = label!.id;
+
+          return signIn(MY_USER)
+            .then(({ authed }) => authed.get(`/labels/${id}/notes?sort=-title`).send())
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.OK);
+              const document = response.body as NoteCollectionDocument;
+              expect(document.data).to.be.an("array");
+              expect(document.data[0].type).to.equal("notes");
+              expect(document.data[0].attributes.title).to.be.a("string");
+              expect(document.data[0].attributes.body).to.be.a("string");
+              expect(document.data.length).to.be.greaterThan(5);
+              let prevTitle = document.data[0].attributes.title;
+              for (let i = 1; i < document.data.length; i++) {
+                const { title } = document.data[i].attributes;
+                expect([prevTitle, title].sort()).to.deep.equal([title, prevTitle]);
+                prevTitle = title;
+              }
+            });
+        });
       });
 
       it("paginates the notes under that label", () => {

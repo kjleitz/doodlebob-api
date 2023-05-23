@@ -1,7 +1,9 @@
+import * as http from "http";
 import * as tsJapi from "ts-japi";
 import JwtUserClaims from "./lib/auth/JwtUserClaims";
 import PageOptions from "./lib/pagination/PageOptions";
-import * as http from "http";
+import FilterOptions from "./lib/filter/FilterOptions";
+import SortOptions from "./lib/sort/SortOptions";
 
 declare global {
   namespace Express {
@@ -9,6 +11,8 @@ declare global {
       jwtUserClaims?: JwtUserClaims;
       document: tsJapi.DataDocument<any> | tsJapi.ErrorDocument | null;
       page: PageOptions;
+      filter: FilterOptions;
+      sort: SortOptions;
     }
   }
 }

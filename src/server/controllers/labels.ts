@@ -5,6 +5,8 @@ import NotFoundError from "../../lib/errors/http/NotFoundError";
 import createPaginator from "../../lib/pagination/createPaginator";
 import pageDbOptions from "../../lib/pagination/pageDbOptions";
 import NoteSerializer from "../../lib/serializers/NoteSerializer";
+import { SortOrder } from "../../lib/sort/SortOptions";
+import orderFromSortOptions from "../../lib/sort/orderFromSortOptions";
 import { middleman } from "../../lib/utils/promises";
 import appDataSource from "../../orm/config/appDataSource";
 import Label from "../../orm/entities/Label";
@@ -22,7 +24,13 @@ const noteRepository = appDataSource.getRepository(Note);
 
 labels.on(Verb.GET, "/", [authGate], (req) => {
   const userId = req.jwtUserClaims!.id;
-  return labelRepository.find({ where: { user: { id: userId } } });
+  const order = orderFromSortOptions(req.sort, "name", {
+    createdAt: SortOrder.DESC,
+    updatedAt: SortOrder.DESC,
+    name: SortOrder.ASC,
+  });
+
+  return labelRepository.find({ where: { user: { id: userId } }, order });
 });
 
 labels.on(Verb.GET, "/:id", [authGate], (req) => {
@@ -35,13 +43,19 @@ labels.on(Verb.GET, "/:id/notes", [authGate], (req) => {
   const id = parseInt(req.params.id, 10);
   const userId = req.jwtUserClaims!.id;
   const { skip, take } = pageDbOptions(req.page, MAX_LABEL_NOTES_PAGE_SIZE);
+  const order = orderFromSortOptions(req.sort, "createdAt", {
+    createdAt: SortOrder.DESC,
+    updatedAt: SortOrder.DESC,
+    title: SortOrder.ASC,
+    body: SortOrder.ASC,
+  });
 
   return labelRepository
     .findOneOrFail({ where: { id, user: { id: userId } } })
     .then((label) =>
       noteRepository.findAndCount({
         where: { user: { id: userId }, labels: { id: label.id } },
-        order: { createdAt: "DESC" },
+        order,
         skip,
         take,
       }),

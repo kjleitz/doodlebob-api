@@ -14,6 +14,7 @@ import userSeeder from "../../orm/seeders/userSeeder";
 import runSeeder from "../../orm/utils/runSeeder";
 import truncateDatabase from "../../orm/utils/truncateDatabase";
 import { signIn } from "../../testing/utils";
+import { UserCollectionDocument } from "../schemata/jsonApiUsers";
 
 const MY_USER = "skyler.white";
 const OTHER_USER = "marie.schrader";
@@ -63,6 +64,40 @@ describe("Users controller", () => {
         .then((response) => {
           expect(response.status).to.equal(HttpStatus.OK);
           expect(response.body.data).to.be.an("array");
+        });
+    });
+
+    it("sorts the returned users by created at, descending, by default", () => {
+      return signIn(ADMIN_USER)
+        .then(({ authed }) => authed.get("/users").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as UserCollectionDocument;
+          expect(document.data).to.be.an("array");
+
+          let prevCreatedAt = new Date(document.data[0].attributes.createdAt);
+          for (let i = 1; i < document.data.length; i++) {
+            const createdAt = new Date(document.data[i].attributes.createdAt);
+            expect(createdAt).to.be.lessThanOrEqual(prevCreatedAt);
+            prevCreatedAt = createdAt;
+          }
+        });
+    });
+
+    it("sorts the returned users by given preference", () => {
+      return signIn(ADMIN_USER)
+        .then(({ authed }) => authed.get("/users?sort=-username").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as UserCollectionDocument;
+          expect(document.data).to.be.an("array");
+
+          let prevUsername = document.data[0].attributes.username;
+          for (let i = 1; i < document.data.length; i++) {
+            const { username } = document.data[i].attributes;
+            expect([prevUsername, username].sort()).to.deep.equal([username, prevUsername]);
+            prevUsername = username;
+          }
         });
     });
 
