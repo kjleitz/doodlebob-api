@@ -1,4 +1,4 @@
-import { In } from "typeorm";
+import { FindManyOptions, FindOptionsWhere, In, Raw } from "typeorm";
 import buildNote from "../../lib/builders/notes/buildNote";
 import editNote from "../../lib/builders/notes/editNote";
 import HttpStatus from "../../lib/errors/HttpStatus";
@@ -21,6 +21,7 @@ import {
   NoteLabelResourceLinkage,
   NoteUpdateResourceDocument,
 } from "../schemata/jsonApiNotes";
+import searchFtsColumnSql from "../../lib/filter/searchFtsColumnSql";
 
 const MAX_NOTES_PAGE_SIZE = 100;
 
@@ -54,7 +55,11 @@ notes.on(Verb.GET, "/", [authGate], (req) => {
     body: SortOrder.ASC,
   });
 
-  return noteRepository.findAndCount({ where: { user: { id: userId } }, order, skip, take }).then(([notes, count]) => {
+  const where: FindOptionsWhere<Note> = { user: { id: userId } };
+  const searchQuery = req.filter.q;
+  if (searchQuery) where.ftsDoc = searchFtsColumnSql(searchQuery);
+
+  return noteRepository.findAndCount({ where, order, skip, take }).then(([notes, count]) => {
     const paginator = createPaginator(baseUrlForPagination(req), req.page.index, take, count);
     return NoteSerializer.serialize(notes, { linkers: { paginator } });
   });

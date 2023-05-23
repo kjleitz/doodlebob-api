@@ -56,7 +56,7 @@ export class NoteLabelNamesCache1684782650572 implements MigrationInterface {
       ],
     );
     await queryRunner.query(`
-            CREATE INDEX "idx_gin_Note_on_fts_doc" ON "note" ("fts_doc")
+            CREATE INDEX "idx_gin_Note_on_fts_doc" ON "note" USING gin ("fts_doc")
         `);
   }
 
@@ -104,7 +104,7 @@ export class NoteLabelNamesCache1684782650572 implements MigrationInterface {
             ADD "fts_doc" tsvector GENERATED ALWAYS AS (to_tsvector('english', title || ' ' || body)) STORED NOT NULL
         `);
     await queryRunner.query(`
-            CREATE INDEX "idx_gin_Note_on_fts_doc" ON "note" ("fts_doc")
+            CREATE INDEX "idx_gin_Note_on_fts_doc" ON "note" USING gin ("fts_doc")
         `);
     await queryRunner.query(`
             ALTER TABLE "note" DROP COLUMN "labelNamesCache"

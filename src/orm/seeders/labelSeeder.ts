@@ -48,9 +48,9 @@ export const USER_LABELED_NOTE_SEEDS: (UserAdminCreateAttributes & {
         labels: ["Cat", "TODO", "Mom"],
       },
       {
-        title: "genius song I wrote last night",
+        title: "genius piece I wrote last night",
         body: "there's a place in france where the naked ladies dance...",
-        labels: ["Writing", "Music"],
+        labels: ["Writing", "Music", "Song"],
       },
       {
         body: "Hi, I'm writing to inform you that I\n\nHello, I just wanted to make sure\n\nHello, you may already be aware, but",

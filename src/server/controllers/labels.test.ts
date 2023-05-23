@@ -233,6 +233,107 @@ describe("Labels controller", () => {
         );
       });
 
+      it("searches the notes under that label if a query is supplied", () => {
+        return getLabels(MY_USER).then((labels) => {
+          const label = labels.find(({ name }) => name === "Song");
+          expect(label).not.to.be.undefined;
+          const id = label!.id;
+
+          return signIn(MY_USER)
+            .then(({ authed }) => authed.get(`/labels/${id}/notes?filter[q]=dancing%20places%20-cat`).send())
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.OK);
+              const document = response.body as NoteCollectionDocument;
+              expect(document.data).to.be.an("array");
+              expect(document.data.length).to.equal(1);
+              expect(document.data[0].attributes.title).to.match(/genius piece I wrote/i);
+              expect(document.data[0].attributes.body).to.match(/there's a place in france/i);
+              expect(document.data[0].attributes.body).not.to.match(/cat/i);
+            });
+        });
+      });
+
+      it("excludes notes with terms preceded by the minus operator from the search of your notes under that label", () => {
+        return getLabels(MY_USER).then((labels) => {
+          const label = labels.find(({ name }) => name === "Cat");
+          expect(label).not.to.be.undefined;
+          const id = label!.id;
+
+          return signIn(MY_USER)
+            .then(({ authed }) => authed.get(`/labels/${id}/notes?filter[q]=-dog`).send())
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.OK);
+              const document = response.body as NoteCollectionDocument;
+              expect(document.data).to.be.an("array");
+              expect(document.data.length).not.to.equal(0);
+              for (let item of document.data) {
+                expect(item.attributes.title).not.to.match(/dog/i);
+                expect(item.attributes.body).not.to.match(/dog/i);
+              }
+            });
+        });
+      });
+
+      it("incorporates label text when searching your notes under that label", () => {
+        return getLabels(MY_USER).then((labels) => {
+          const label = labels.find(({ name }) => name === "Song");
+          expect(label).not.to.be.undefined;
+          const id = label!.id;
+
+          return signIn(MY_USER)
+            .then(({ authed }) => authed.get(`/labels/${id}/notes?filter[q]=music`).send())
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.OK);
+              const document = response.body as NoteCollectionDocument;
+              expect(document.data).to.be.an("array");
+              expect(document.data.length).not.to.equal(0);
+
+              const placeInFranceNote = document.data.find((item) => item.attributes.body.match(/place in france/i));
+              expect(placeInFranceNote).not.to.be.undefined;
+              expect(placeInFranceNote!.attributes.title).not.to.match(/music/i);
+              expect(placeInFranceNote!.attributes.body).not.to.match(/music/i);
+            });
+        });
+      });
+
+      it("excludes notes not under that label when searching your notes under that label", () => {
+        return getLabels(MY_USER).then((labels) => {
+          const label = labels.find(({ name }) => name === "Song");
+          expect(label).not.to.be.undefined;
+          const id = label!.id;
+
+          return signIn(MY_USER)
+            .then(({ authed }) => authed.get(`/labels/${id}/notes?filter[q]=cat`).send())
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.OK);
+              const document = response.body as NoteCollectionDocument;
+              expect(document.data).to.be.an("array");
+              expect(document.data.length).to.equal(0);
+            });
+        });
+      });
+
+      it("does not return notes of other users who have matching label names when searching your notes under that label", () => {
+        return getLabels(MY_USER).then((labels) => {
+          const label = labels.find(({ name }) => name === "TODO");
+          expect(label).not.to.be.undefined;
+          const id = label!.id;
+
+          return signIn(MY_USER)
+            .then(({ authed }) => authed.get(`/labels/${id}/notes?filter[q]=mom`).send())
+            .then((response) => {
+              expect(response.status).to.equal(HttpStatus.OK);
+              const document = response.body as NoteCollectionDocument;
+              expect(document.data).to.be.an("array");
+              expect(document.data.length).not.to.equal(0);
+              for (let item of document.data) {
+                expect(item.attributes.title).not.to.match(/private doodlebob instance/i);
+                expect(item.attributes.body).not.to.match(/private doodlebob instance/i);
+              }
+            });
+        });
+      });
+
       it("returns sorted notes under that label according to sort options", () => {
         return getLabels(MY_USER).then((labels) => {
           const label = labels.find(({ name }) => name === "Cat");

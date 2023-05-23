@@ -1,3 +1,4 @@
+import { FindManyOptions, FindOptionsWhere } from "typeorm";
 import buildLabel from "../../lib/builders/labels/buildLabel";
 import editLabel from "../../lib/builders/labels/editLabel";
 import HttpStatus from "../../lib/errors/HttpStatus";
@@ -15,6 +16,7 @@ import Controller, { Verb } from "../Controller";
 import authGate from "../middleware/gates/authGate";
 import baseUrlForPagination from "../middleware/helpers/baseUrlForPagination";
 import { LabelCreateResourceDocument, LabelUpdateResourceDocument } from "../schemata/jsonApiLabels";
+import searchFtsColumnSql from "../../lib/filter/searchFtsColumnSql";
 
 const MAX_LABEL_NOTES_PAGE_SIZE = 100;
 
@@ -52,14 +54,12 @@ labels.on(Verb.GET, "/:id/notes", [authGate], (req) => {
 
   return labelRepository
     .findOneOrFail({ where: { id, user: { id: userId } } })
-    .then((label) =>
-      noteRepository.findAndCount({
-        where: { user: { id: userId }, labels: { id: label.id } },
-        order,
-        skip,
-        take,
-      }),
-    )
+    .then((label) => {
+      const where: FindOptionsWhere<Note> = { user: { id: userId }, labels: { id: label.id } };
+      const searchQuery = req.filter.q;
+      if (searchQuery) where.ftsDoc = searchFtsColumnSql(searchQuery);
+      return noteRepository.findAndCount({ where, order, skip, take });
+    })
     .then(([notes, count]) => {
       const paginator = createPaginator(baseUrlForPagination(req), req.page.index, take, count);
       return NoteSerializer.serialize(notes, { linkers: { paginator } });

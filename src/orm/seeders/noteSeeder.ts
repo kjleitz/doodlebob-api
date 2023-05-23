@@ -3,9 +3,12 @@ import buildNote from "../../lib/builders/notes/buildNote";
 import buildUserAdmin from "../../lib/builders/users/buildUserAdmin";
 import { NoteCreateAttributes } from "../../server/schemata/jsonApiNotes";
 import { UserAdminCreateAttributes } from "../../server/schemata/jsonApiUsers";
+import Label from "../entities/Label";
 import Note from "../entities/Note";
 import User from "../entities/User";
 import Seeder from "./Seeder";
+
+const LABEL_SEEDS = [{ name: "Song" }]; // this is for the "...there's a place in france..." note
 
 export const USER_NOTE_SEEDS: (UserAdminCreateAttributes & { notes: NoteCreateAttributes[] })[] = [
   {
@@ -39,8 +42,9 @@ export const USER_NOTE_SEEDS: (UserAdminCreateAttributes & { notes: NoteCreateAt
         body: "clothes for cat",
       },
       {
-        title: "genius song I wrote last night",
+        title: "genius piece I wrote last night",
         body: "there's a place in france where the naked ladies dance...",
+        // labels: [{ name: "Song" }] // this is added in the seeder
       },
       {
         body: "feed cat",
@@ -49,7 +53,7 @@ export const USER_NOTE_SEEDS: (UserAdminCreateAttributes & { notes: NoteCreateAt
         body: "cat translator",
       },
       {
-        body: "cat name: dog",
+        body: "cat name: dog (mom's idea)",
       },
       {
         title: "stuck in my head",
@@ -83,16 +87,35 @@ export const USER_NOTE_SEEDS: (UserAdminCreateAttributes & { notes: NoteCreateAt
 const noteSeeder: Seeder<Note[]> = (entityManager) => {
   const userRepository = entityManager.getRepository(User);
   const noteRepository = entityManager.getRepository(Note);
-  const saves = USER_NOTE_SEEDS.map((userSeed) =>
-    buildUserAdmin(userSeed)
-      .then((user) => userRepository.save(user))
-      .then((user) =>
-        Promise.all(
-          userSeed.notes.map((noteSeed) => buildNote(noteSeed, user.id).then((note) => noteRepository.save(note))),
-        ),
-      ),
+  const labelRepository = entityManager.getRepository(Label);
+
+  const noteSaves = Promise.all(
+    USER_NOTE_SEEDS.map((userSeed) =>
+      buildUserAdmin(userSeed)
+        .then((user) => userRepository.save(user))
+        .then((user) => {
+          const labelSaves = Promise.all(
+            LABEL_SEEDS.map((labelAttrs) => labelRepository.save({ ...labelAttrs, user })),
+          );
+
+          return labelSaves.then((labels) => {
+            const songLabel = labels.find(({ name }) => name === "Song");
+            if (!songLabel) throw new Error("Where'd the song label go?");
+
+            return Promise.all(
+              userSeed.notes.map((noteSeed) =>
+                buildNote(noteSeed, user.id).then((note) => {
+                  if (note.body.match(/place in france/i)) note.labels = [songLabel];
+                  return noteRepository.save(note);
+                }),
+              ),
+            );
+          });
+        }),
+    ),
   );
-  return Promise.all(saves).then((noteses) => noteses.flat());
+
+  return noteSaves.then((noteses) => noteses.flat());
 };
 
 export default noteSeeder;

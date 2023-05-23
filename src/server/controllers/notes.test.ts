@@ -13,7 +13,7 @@ import User from "../../orm/entities/User";
 import noteSeeder, { USER_NOTE_SEEDS } from "../../orm/seeders/noteSeeder";
 import runSeeder from "../../orm/utils/runSeeder";
 import truncateDatabase from "../../orm/utils/truncateDatabase";
-import { signIn } from "../../testing/utils";
+import { printResponseBodyMiddleman, signIn } from "../../testing/utils";
 import { NoteCollectionDocument, NoteResourceDocument } from "../schemata/jsonApiNotes";
 
 const MY_USER_SEED = USER_NOTE_SEEDS.find(
@@ -107,6 +107,66 @@ describe("Notes controller", () => {
           expect(response.status).to.equal(HttpStatus.OK);
           expect(response.body.data).to.be.an("array");
           expect(response.body.data.length).to.equal(MY_USER_NOTE_SEEDS.length);
+        });
+    });
+
+    it("searches a list of your notes if a query is supplied", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?filter[q]=dancing%20places%20-cat").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).not.to.equal(0);
+          expect(document.data[0].attributes.title).to.match(/genius piece I wrote/i);
+          expect(document.data[0].attributes.body).to.match(/there's a place in france/i);
+          expect(document.data[0].attributes.body).not.to.match(/cat/i);
+        });
+    });
+
+    it("excludes terms from a search of your notes with the minus operator", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?filter[q]=-cat").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).not.to.equal(0);
+          for (let item of document.data) {
+            expect(item.attributes.title).not.to.match(/cat/i);
+            expect(item.attributes.body).not.to.match(/cat/i);
+          }
+        });
+    });
+
+    it("incorporates label text when searching your notes", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?filter[q]=song").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).not.to.equal(0);
+
+          const placeInFranceNote = document.data.find((item) => item.attributes.body.match(/place in france/i));
+          expect(placeInFranceNote).not.to.be.undefined;
+          expect(placeInFranceNote!.attributes.title).not.to.match(/song/i);
+          expect(placeInFranceNote!.attributes.body).not.to.match(/song/i);
+        });
+    });
+
+    it("does not return notes of other users when searching your notes", () => {
+      return signIn(MY_USER)
+        .then(({ authed }) => authed.get("/notes?filter[q]=mom").send())
+        .then((response) => {
+          expect(response.status).to.equal(HttpStatus.OK);
+          const document = response.body as NoteCollectionDocument;
+          expect(document.data).to.be.an("array");
+          expect(document.data.length).not.to.equal(0);
+          for (let item of document.data) {
+            expect(item.attributes.title).not.to.match(/private doodlebob instance/i);
+            expect(item.attributes.body).not.to.match(/private doodlebob instance/i);
+          }
         });
     });
 

@@ -30,7 +30,7 @@ import User from "./User";
 //   - `pnpm migration:generate`, or
 //   - `pnpm docker:migration:generate`
 //
-@Index("idx_gin_Note_on_fts_doc", { synchronize: false })
+@Index("idx_gin_Note_on_ftsDoc", { synchronize: false })
 export default class Note {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
@@ -77,6 +77,7 @@ export default class Note {
     generatedIdentity: "ALWAYS",
     generatedType: "STORED",
     asExpression: "to_tsvector('english', \"title\" || ' ' || \"body\" || ' ' || \"labelNamesCache\"::text)",
+    select: false,
   })
-  fts_doc!: string[];
+  ftsDoc!: string[];
 }
