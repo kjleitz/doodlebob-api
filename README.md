@@ -1,5 +1,7 @@
 # doodlebob-api
 
+![build, test, lint](https://github.com/kjleitz/doodlebob-api/actions/workflows/main.yml/badge.svg?branch=main)
+
 ## Setup
 
 ### Install prerequisites
