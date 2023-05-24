@@ -1,6 +1,9 @@
 # doodlebob-api
 
-![build, test, lint](https://github.com/kjleitz/doodlebob-api/actions/workflows/main.yml/badge.svg?branch=main)
+[![build, test, lint](https://github.com/kjleitz/doodlebob-api/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/kjleitz/doodlebob-api/actions/workflows/main.yml)
+[![dependabot status](https://badgen.net/github/dependabot/kjleitz/doodlebob-api)](https://github.com/kjleitz/doodlebob-api/issues)
+[![MIT license](https://badgen.net/github/license/kjleitz/doodlebob-api)](https://github.com/kjleitz/doodlebob-api/blob/main/LICENSE)
+[![latest tag](https://badgen.net/github/tag/kjleitz/doodlebob-api)](https://github.com/kjleitz/doodlebob-api/tags)
 
 ## Setup
 
