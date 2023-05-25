@@ -124,7 +124,7 @@ pnpm exec mocha src/server/controllers/users.test.ts --grep "returns your user i
 pnpm run test --grep "returns your user info"
 ```
 
-> **NB:** You can narrow down the case by including the strings from the ancestral `describe` clauses before the string from the target `it` clause:
+> **Note:** You can narrow down the case by including the strings from the ancestral `describe` clauses before the string from the target `it` clause:
 >
 > ```
 > pnpm run test --grep "Users controller Show returns your user info"
@@ -225,3 +225,63 @@ me@lappy $ pnpm shell
 ```
 
 ...which should do the trick.
+
+## Migrating from Google Keep
+
+You can export your data from Google Keep and import it into Doodlebob.
+
+### Export your data from Google Keep using Google Takeout
+
+> **Note:** This will not delete your Keep data, as of the time this document was written. Just exports it for download.
+
+This process is described in further detail by Google [here](https://support.google.com/accounts/answer/3024190). If the steps for export change and the following summary is out of date, visit that page to follow the up-to-date instructions.
+
+1. Visit https://takeout.google.com
+1. Deselect all checkboxes
+1. Select the "Keep" checkbox
+1. Continue
+1. Choose your preferred file type, frequency, and destination
+1. Create export
+1. Wait until the export is finished (might take a few minutes or more)
+1. Download your export file (or _files,_ if the export exceeded your specified file size and had to be split into multiple files)
+
+### Export your data from Google Keep thoroughly by scraping the Google Keep web page
+
+**Unfortunately,** many people have had issues with Google Takeout (myself included) where the exported collection is missing a HUGE percentage of the data it is supposed to return. This happens across services, including Google Photos. Very frustrating.
+
+In my case, exporting my Keep data only returned the last 2-3 years' worth of notes, despite my note history stretching back eight years (at time of writing). All eight years, however, become present when I open the Google Keep web view (https://keep.google.com) and painstakingly _scroll, load, scroll, load, scroll, load, scroll..._ all the way down to the bottom.
+
+Armed with this knowledge, you can use the following steps to export all your notes, thoroughly, using brute force.
+
+1. Open the Google Keep web view in your browser (i.e., https://keep.google.com)
+1. Open up your browser's developer console
+    - If you don't know how to do this, generally you can get to it in all major browsers by right clicking the page, selecting "Inspect" or "Inspect element", and then switching to the "Console" tab where you can enter some JavaScript
+    - In Safari, you may need to enable developer options before the dev console is available to you
+1. If it isn't already un-docked, you should un-dock the console into its own window. For some unholy reason, Keep evacuates most of your pre-loaded notes from the DOM whenever the page is resized. Un-docking the console into its own window will prevent this from happening. If that wasn't clear: **Do not resize the window containing the Google Keep web view while you are following these steps.** You can un-dock the dev console usually by clicking on some three-vertical-dots menu or finding the icon in one of the toolbars along with a few others that represent docking to the left/right/bottom/top of the page. Choose the one that lets you pop it out into its own window.
+1. For each command below, you should copy and paste it into the browser console and hit enter, following the instructions between each procedure.
+1. **Keep the page open** and the **tab visible.**
+
+First, run this in order to automatically scroll down the page, which will load all your notes:
+
+```js
+i = 0; interval = setInterval(() => { i += 1; console.log("scrolling (" + i + ")"); window.scrollTo(0, document.body.scrollHeight) }, 100); stopScrolling = () => { clearInterval(interval) }
+```
+
+Go grab a coffee or something. This is going to take a few minutes.
+
+Once the page has reached the bottom (the beginning of your notes), run this:
+
+```js
+noteContainers = Array.from(document.querySelectorAll("[data-tooltip-text='Select note'] + div, [data-tooltip-text='Select pinned note'] + div")); noteContainers.length
+```
+
+The printed figure is the likely _disgusting_ number of notes you've amassed over the years.
+
+Now, run this:
+
+```js
+noteContainerFields = noteContainers.map((container) => { const fieldsContainer = container.querySelector("[data-tooltip-text='Pin note'], [data-tooltip-text='Unpin note']").parentNode; const fieldContainers = Array.from(fieldsContainer.childNodes); const fields = {}; fields.fullText = fieldsContainer.innerText; fields.listItems = []; Array.from(fieldsContainer.querySelectorAll("[aria-label='list item']")).forEach((item) => { fields.listItems.push({ text: item.innerText, checked: item.parentNode.previousSibling.querySelector("[role=checkbox]").getAttribute("aria-checked") === "true" }) }); fields.labels = Array.from(fieldsContainer.querySelectorAll("label")).map((lbl) => lbl.innerText).filter((labelName) => !!labelName); fields.imageUrls = Array.from(fieldsContainer.querySelectorAll("img")).map((img) => img.src).filter((url) => !!url); timestamps = fieldsContainer.querySelector("[data-tooltip-text^=Created]"); fields.createdDesc = timestamps.getAttribute("data-tooltip-text"); fields.editedDesc = timestamps.innerText; fields.texts = fieldContainers.map((fieldContainer) => fieldContainer.innerText); fields.reminders = []; Array.from(fieldsContainer.querySelectorAll("[aria-label^='Reminder set']")).forEach((rem) => { fields.reminders.push(rem.getAttribute("aria-label")); const remText = rem.querySelector("label").innerText; fields.labels = fields.labels.filter((labelName) => labelName !== remText) }); fields.title = fieldContainers[3].childNodes[0].innerText; fields.body = fields.texts[4]; fields.parentEl = fieldsContainer; return fields }); if (noteContainerFields.some(({ texts }) => texts[0] || texts[1] || texts[2])) throw new Error("There shouldn't be anything in the first three divs. Script is out of date. Seek assistance.");
+```
+
+TODO: expand notes ending in ellipses to get full body
+TODO: make sure all labels are being read (some might be truncated if there are many on one note)
