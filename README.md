@@ -5,6 +5,10 @@
 [![Latest version](https://img.shields.io/github/v/tag/kjleitz/doodlebob-api?label=latest%20version&labelColor=363d44)](https://github.com/kjleitz/doodlebob-api/tags)
 [![MIT license](https://img.shields.io/github/license/kjleitz/doodlebob-api?labelColor=363d44&color=blue)](https://github.com/kjleitz/doodlebob-api/blob/main/LICENSE)
 
+## Where's the client?
+
+The reference client implementation for Doodlebob (cross-platform) lives at [kjleitz/doodlebob_client](https://github.com/kjleitz/doodlebob_client/).
+
 ## Setup
 
 ### Install prerequisites
